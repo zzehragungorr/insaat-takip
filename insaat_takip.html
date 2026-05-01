@@ -2027,8 +2027,9 @@ function clearMyNotifs() {
   if(!currentUser) return;
   if(!confirm('Tüm bildirimleriniz silinecek. Emin misiniz?')) return;
   var myNotifs = (window._allNotifs||[]).filter(function(n){ return n.hedef===currentUser.id; });
+  if(!myNotifs.length){ showToast('Zaten bildirim yok'); return; }
   myNotifs.forEach(function(n){
-    if(window._fbDelete) db.collection('bildirimler').doc(n.id).delete();
+    if(window._fbDeleteNotif) window._fbDeleteNotif(n.id);
   });
   showToast('Bildirimler temizlendi ✓');
 }
