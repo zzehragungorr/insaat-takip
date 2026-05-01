@@ -439,6 +439,7 @@ loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js', f
             <div class="profile-menu-dept" id="pmDept">—</div>
           </div>
           <button class="profile-menu-item" onclick="openPwdModal();toggleProfileMenu()">🔑 Şifre Değiştir</button>
+          <button class="profile-menu-item danger" onclick="clearMyNotifs();toggleProfileMenu()">🗑 Bildirimlerimi Temizle</button>
           <button class="profile-menu-item danger" onclick="logout()">↩ Oturumu Kapat</button>
         </div>
       </div>
@@ -696,7 +697,12 @@ loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js', f
       <div id="loginStep2" class="login-step">
         <button class="login-back" onclick="loginGoBack()">← Geri</button>
         <div class="login-selected-user" id="loginSelectedUser"></div>
-        <input type="password" class="login-input" id="loginPassword" placeholder="Şifrenizi girin" onkeydown="if(event.key==='Enter')doLogin()">
+        <div style="position:relative">
+          <input type="password" class="login-input" id="loginPassword" placeholder="Şifrenizi girin" onkeydown="if(event.key==='Enter')doLogin()" style="padding-right:38px">
+          <button type="button" onclick="togglePwdVis('loginPassword',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:rgba(255,255,255,.5);padding:0;line-height:1">
+            <svg id="eye_loginPassword" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="width:16px;height:16px"><path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/><circle cx="8" cy="8" r="2"/></svg>
+          </button>
+        </div>
         <div class="login-error" id="loginError">⚠ Şifre yanlış, tekrar deneyin.</div>
         <div class="login-check-row">
           <input type="checkbox" id="rememberMe" checked>
@@ -717,9 +723,9 @@ loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js', f
       <p>Güvenliğiniz için şifrenizi güncelleyin</p>
     </div>
     <div class="pwd-body">
-      <div class="pwd-group"><label>Mevcut Şifre</label><input type="password" id="pwdCurrent" class="login-input" style="background:var(--surface);color:var(--text);border-color:var(--border)" placeholder="Mevcut şifreniz"></div>
-      <div class="pwd-group"><label>Yeni Şifre</label><input type="password" id="pwdNew" class="login-input" style="background:var(--surface);color:var(--text);border-color:var(--border)" placeholder="En az 6 karakter"></div>
-      <div class="pwd-group"><label>Yeni Şifre (Tekrar)</label><input type="password" id="pwdConfirm" class="login-input" style="background:var(--surface);color:var(--text);border-color:var(--border)" placeholder="Yeni şifrenizi tekrar girin"></div>
+      <div class="pwd-group"><label>Mevcut Şifre</label><div style="position:relative"><input type="password" id="pwdCurrent" class="login-input" style="background:var(--surface);color:var(--text);border-color:var(--border);padding-right:38px" placeholder="Mevcut şifreniz"><button type="button" onclick="togglePwdVis('pwdCurrent',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text3);padding:0;line-height:1"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="width:15px;height:15px"><path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/><circle cx="8" cy="8" r="2"/></svg></button></div></div>
+      <div class="pwd-group"><label>Yeni Şifre</label><div style="position:relative"><input type="password" id="pwdNew" class="login-input" style="background:var(--surface);color:var(--text);border-color:var(--border);padding-right:38px" placeholder="En az 6 karakter"><button type="button" onclick="togglePwdVis('pwdNew',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text3);padding:0;line-height:1"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="width:15px;height:15px"><path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/><circle cx="8" cy="8" r="2"/></svg></button></div></div>
+      <div class="pwd-group"><label>Yeni Şifre (Tekrar)</label><div style="position:relative"><input type="password" id="pwdConfirm" class="login-input" style="background:var(--surface);color:var(--text);border-color:var(--border);padding-right:38px" placeholder="Yeni şifrenizi tekrar girin"><button type="button" onclick="togglePwdVis('pwdConfirm',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text3);padding:0;line-height:1"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="width:15px;height:15px"><path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/><circle cx="8" cy="8" r="2"/></svg></button></div></div>
       <div class="login-error" id="pwdError" style="display:none"></div>
       <div style="display:flex;gap:8px;margin-top:14px">
         <button class="btn" onclick="closePwdModal()" style="flex:1">İptal</button>
@@ -2014,6 +2020,32 @@ var DEFAULT_PASSWORDS = {
 };
 
 var _loginTempUser = null;
+
+
+
+function clearMyNotifs() {
+  if(!currentUser) return;
+  if(!confirm('Tüm bildirimleriniz silinecek. Emin misiniz?')) return;
+  var myNotifs = (window._allNotifs||[]).filter(function(n){ return n.hedef===currentUser.id; });
+  myNotifs.forEach(function(n){
+    if(window._fbDelete) db.collection('bildirimler').doc(n.id).delete();
+  });
+  showToast('Bildirimler temizlendi ✓');
+}
+
+function togglePwdVis(inputId, btn) {
+  var inp = document.getElementById(inputId);
+  if(!inp) return;
+  if(inp.type === 'password') {
+    inp.type = 'text';
+    btn.querySelector('svg').innerHTML = '<path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/><line x1="2" y1="2" x2="14" y2="14"/>';
+    btn.style.color = 'rgba(255,255,255,.8)';
+  } else {
+    inp.type = 'password';
+    btn.querySelector('svg').innerHTML = '<path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/><circle cx="8" cy="8" r="2"/>';
+    btn.style.color = '';
+  }
+}
 
 function getPassword(uid) {
   var custom = localStorage.getItem('pwd_'+uid);
