@@ -439,7 +439,6 @@ loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js', f
             <div class="profile-menu-dept" id="pmDept">—</div>
           </div>
           <button class="profile-menu-item" onclick="openPwdModal();toggleProfileMenu()">🔑 Şifre Değiştir</button>
-          <button class="profile-menu-item danger" onclick="clearMyNotifs();toggleProfileMenu()">🗑 Bildirimlerimi Temizle</button>
           <button class="profile-menu-item danger" onclick="logout()">↩ Oturumu Kapat</button>
         </div>
       </div>
@@ -564,7 +563,7 @@ loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js', f
             <input type="text" id="f_projeAdi" placeholder="Proje adını girin" oninput="checkFormValid()">
           </div>
           <div class="form-group">
-            <label>Departman <span class="req">*</span> <span style="font-size:10px;color:var(--text3);text-transform:none;font-weight:400">(otomatik atanır)</span></label>
+            <label>Departman <span class="req">*</span></label>
             <select id="f_departman" onchange="onDepartmanChange();checkFormValid()">
               <option value="">— Seçiniz —</option>
               <option value="İnşaat">İnşaat</option>
@@ -620,9 +619,9 @@ loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js', f
       <div class="form-sec">
         <div class="form-sec-title">Revizyon</div>
         <div class="form-grid">
-          <div class="form-group"><label>Revizyon Durumu</label><select id="f_revizyonDurumu" disabled style="background:var(--surface3);color:var(--text2)"><option value="Yok">Yok</option><option value="Var">Var</option></select></div>
-          <div class="form-group"><label>Revizyon No</label><select id="f_revizyonNo" onchange="onRevizyonNoChange()"><option value="">Yok (Revizyon yok)</option></select></div>
-          <div class="form-group full"><label>Revizyon Sebebi</label><select id="f_revizyonSebebi" disabled><option value="">— Revizyon Var seçin —</option></select></div>
+          <div class="form-group" style="display:none"><label>Revizyon Durumu</label><select id="f_revizyonDurumu" disabled style="background:var(--surface3);color:var(--text2)"><option value="Yok">Yok</option><option value="Var">Var</option></select></div>
+          <div class="form-group"><label>Revizyon No</label><select id="f_revizyonNo" onchange="onRevizyonNoChange();checkFormValid()"><option value="">Yok (Revizyon yok)</option></select></div>
+          <div class="form-group full"><label>Revizyon Sebebi <span class="req rev-sebep-label">*</span></label><select id="f_revizyonSebebi" disabled onchange="checkFormValid()"><option value="">— Revizyon Var seçin —</option></select></div>
         </div>
       </div>
       <div class="form-sec">
@@ -1085,7 +1084,10 @@ function checkFormValid(){
   var itOk = it && it.indexOf('Seçin') === -1 && it.indexOf('departman') === -1;
   var oyOk = oy && oy.indexOf('Seçin') === -1 && oy.indexOf('departman') === -1;
 
-  var valid = !!pt && paOk && !!dept && !!sor && itOk && oyOk && !!gelis;
+  var revNo = document.getElementById('f_revizyonNo').value;
+  var revSb = document.getElementById('f_revizyonSebebi').value;
+  var revOk = !revNo || (revSb && revSb.indexOf('Seçin')===-1);
+  var valid = !!pt && paOk && !!dept && !!sor && itOk && oyOk && !!gelis && revOk;
 
   btn.disabled = !valid;
   btn.style.opacity = valid ? '1' : '0.4';
@@ -1163,7 +1165,9 @@ function openModal(id){
     var r=records.find(function(x){return x.id===id;});
     resetForm();
     document.getElementById('f_departman').value=r.departman||'';
+    document.getElementById('f_departman').disabled=true;
     onDepartmanChange(r.sorumlu,r.onaylayan,r.isTanimi);
+    document.getElementById('f_sorumlu').disabled=true;
     FLDS.forEach(function(f){var el=document.getElementById('f_'+f);if(el)el.value=r[f]||'';});
     setTimeout(function(){
       onTalepChange();
@@ -1201,6 +1205,9 @@ function saveRecord(){
   if(!it||it.indexOf('Seçin')!==-1||it.indexOf('departman')!==-1){showToast('⚠ İş tanımı seçiniz!');return;}
   var oy=document.getElementById('f_onaylayan').value;
   if(!oy||oy.indexOf('Seçin')!==-1||oy.indexOf('departman')!==-1){showToast('⚠ Onaylayan seçiniz!');return;}
+  var revNo=document.getElementById('f_revizyonNo').value;
+  var revSb=document.getElementById('f_revizyonSebebi').value;
+  if(revNo && (!revSb||revSb.indexOf('Seçin')!==-1)){showToast('⚠ Revizyon sebebi seçiniz!');return;}
   var obj={id:editId||genId()};
   // Ekleyen kişiyi sadece yeni kayıtta set et
   if(!editId && currentUser) obj.ekleyen = currentUser.id;
@@ -1239,6 +1246,8 @@ function saveRecord(){
 }
 
 function deleteRecord(id){
+  var r=records.find(function(x){return x.id===id;});
+  if(!canEdit(r)){showToast('⚠ Bu kaydı yalnızca ekleyen kişi silebilir!');return;}
   if(!confirm('Bu kaydı silmek istediğinizden emin misiniz?'))return;
   closeDetail();
   if(window._fbDelete){
@@ -2037,14 +2046,24 @@ function clearMyNotifs() {
 function togglePwdVis(inputId, btn) {
   var inp = document.getElementById(inputId);
   if(!inp) return;
+  // Mevcut arka plan ve rengi koru
+  var currentBg = getComputedStyle(inp).backgroundColor;
+  var currentColor = getComputedStyle(inp).color;
+  var currentBorder = getComputedStyle(inp).borderColor;
   if(inp.type === 'password') {
     inp.type = 'text';
+    inp.style.background = currentBg;
+    inp.style.color = currentColor;
+    inp.style.borderColor = currentBorder;
     btn.querySelector('svg').innerHTML = '<path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/><line x1="2" y1="2" x2="14" y2="14"/>';
-    btn.style.color = 'rgba(255,255,255,.8)';
+    btn.style.color = inp.id === "loginPassword" ? "rgba(255,255,255,.8)" : "var(--accent)";
   } else {
     inp.type = 'password';
+    inp.style.background = currentBg;
+    inp.style.color = currentColor;
+    inp.style.borderColor = currentBorder;
     btn.querySelector('svg').innerHTML = '<path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/><circle cx="8" cy="8" r="2"/>';
-    btn.style.color = '';
+    btn.style.color = inp.id === "loginPassword" ? "rgba(255,255,255,.5)" : "var(--text3)";
   }
 }
 
