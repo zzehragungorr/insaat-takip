@@ -619,8 +619,6 @@ loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js', f
     <div id="myworksList"></div>
   </div>
 
-</div>
-
   <!-- TAB: ARŞİV -->
   <div class="tab-content" id="tab-archive">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
@@ -632,7 +630,10 @@ loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js', f
         <input type="text" id="archiveSearch" placeholder="🔍 Ara..." oninput="renderArchive()"
           style="padding:7px 12px;border:1px solid var(--border);border-radius:var(--r);font-size:12.5px;font-family:inherit;outline:none;width:200px">
         <button class="btn" onclick="exportArchiveExcel()">
-          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="width:13px;height:13px"><rect x="2" y="1" width="12" height="14" rx="1.5"/></svg>Excel
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="width:13px;height:13px"><rect x="2" y="1" width="12" height="14" rx="1.5"/></svg>Excel İndir
+        </button>
+        <button class="btn" onclick="printArchive()">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="width:13px;height:13px"><polyline points="4,5 4,1 12,1 12,5"/><path d="M4 11H2V6h12v5h-2"/><rect x="4" y="9" width="8" height="6"/></svg>Yazdır
         </button>
       </div>
     </div>
@@ -1464,7 +1465,8 @@ function switchTab(tabId,el){
     document.getElementById('filterStrip').style.display='none';
   } else if(tabId==='tab-archive'){
     renderArchive();
-    document.getElementById('filterStrip').style.display='none';
+    var fs = document.getElementById('filterStrip');
+    if(fs) fs.style.display='none';
   } else {
     document.getElementById('filterStrip').style.display='';
   }
@@ -3167,7 +3169,7 @@ function renderArchive(){
   }
 
   var html='<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;box-shadow:var(--sh)">'+
-    '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12.5px;min-width:800px">'+
+    '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12.5px">'+
     '<thead><tr style="background:#1E3250">'+
       '<th style="padding:8px 11px;color:#fff;font-size:10px;font-weight:600;text-align:left;border-right:1px solid #2D4A66">#</th>'+
       '<th style="padding:8px 11px;color:#fff;font-size:10px;font-weight:600;text-align:left;border-right:1px solid #2D4A66">Proje Adı</th>'+
@@ -3218,12 +3220,59 @@ function exportArchiveExcel(){
       calcDays(r.bitisTarihi,r.baslangicTarihi),r.durum||'']);
   });
   [5,22,28,14,18,12,12,12,14].forEach(function(w,i){ws.getColumn(i+1).width=w;});
+  ws.autoFilter={from:{row:1,column:1},to:{row:1,column:9}};
+  ws.views=[{state:'frozen',ySplit:1}];
+  ws.getRow(1).height=22;
   wb.xlsx.writeBuffer().then(function(buffer){
     var blob=new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
     var a=document.createElement('a');a.href=URL.createObjectURL(blob);
     a.download='arsiv_'+new Date().toLocaleDateString('tr-TR').replace(/\./g,'-')+'.xlsx';
     a.click();showToast('Arşiv Excel indirildi ✓');
   });
+}
+
+// ── ARŞİV YAZDIR ──────────────────────────────
+function printArchive(){
+  var data=records.filter(function(r){return r.durum==='Tamamlandı'||r.durum==='İptal';});
+  var q=(document.getElementById('archiveSearch')||{}).value||'';
+  if(q) data=data.filter(function(r){return Object.values(r).some(function(v){return String(v).toLowerCase().indexOf(q.toLowerCase())>=0;});});
+  var tarih=new Date().toLocaleDateString('tr-TR',{day:'2-digit',month:'long',year:'numeric'});
+  var SC={'Tamamlandı':['#DBEAFE','#1E40AF'],'İptal':['#FEE2E2','#991B1B']};
+  var rows=data.map(function(r,i){
+    var sc=SC[r.durum]||['#F3F4F6','#374151'];
+    return '<tr style="'+(i%2===1?'background:#F9FAFB':'')+'">' +
+      '<td style="text-align:center;color:#9CA3AF;font-size:9px">'+(i+1)+'</td>'+
+      '<td style="font-weight:600">'+esc(r.projeAdi||'—')+'</td>'+
+      '<td>'+esc(r.isTanimi||'—')+'</td>'+
+      '<td>'+esc(r.departman||'—')+'</td>'+
+      '<td>'+esc(r.sorumlu||'—')+'</td>'+
+      '<td style="text-align:center">'+(r.gelisTarihi?fmtDate(r.gelisTarihi):'—')+'</td>'+
+      '<td style="text-align:center">'+(r.bitisTarihi?fmtDate(r.bitisTarihi):'—')+'</td>'+
+      '<td style="text-align:center;color:#1D4ED8;font-weight:600">'+calcDays(r.bitisTarihi,r.baslangicTarihi)+'</td>'+
+      '<td style="text-align:center"><span style="background:'+sc[0]+';color:'+sc[1]+';padding:2px 8px;border-radius:3px;font-size:9px;font-weight:700">'+(r.durum||'—')+'</span></td>'+
+    '</tr>';
+  }).join('');
+
+  var html='<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>Arşiv</title>'+
+  '<style>@page{size:A4 landscape;margin:10mm}*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:10px}'+
+  '.hdr{background:linear-gradient(135deg,#0F1923,#1E3250);color:#fff;padding:14px 18px;border-radius:6px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}'+
+  '.hdr h1{font-size:15px;font-weight:700}.hdr p{font-size:10px;color:#8DA8C4;margin-top:2px}'+
+  'table{width:100%;border-collapse:collapse}thead tr{background:#1E3250}'+
+  'th{color:#fff;padding:6px 8px;text-align:left;font-weight:700;font-size:9px}'+
+  'td{padding:5px 8px;border-bottom:1px solid #EEF2FF;font-size:9px}'+
+  '@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body>'+
+  '<div class="hdr"><div><h1>📦 Arşiv</h1><p>Tamamlanan ve İptal Edilen İşler · '+tarih+'</p></div>'+
+  '<div style="text-align:right;color:#8DA8C4;font-size:11px">'+data.length+' kayıt</div></div>'+
+  '<table><thead><tr>'+
+    '<th>#</th><th>Proje Adı</th><th>İş Tanımı</th><th>Departman</th><th>Sorumlu</th>'+
+    '<th>Geliş</th><th>Bitiş</th><th>Çalışma</th><th>Durum</th>'+
+  '</tr></thead><tbody>'+rows+'</tbody></table>'+
+  '<div style="margin-top:12px;padding-top:8px;border-top:1px solid #E5E7EB;font-size:8px;color:#9CA3AF;display:flex;justify-content:space-between">'+
+  '<span>Smart Güneş Enerjisi Teknolojileri · İnşaat İşleri Takip Sistemi</span><span>'+tarih+'</span></div>'+
+  '</body></html>';
+  var win=window.open('','_blank','width=1100,height=800');
+  win.document.write(html);win.document.close();
+  win.onload=function(){win.print();};
 }
 
 // ── RAPOR TARİH FİLTRESİ ────────────────────────
