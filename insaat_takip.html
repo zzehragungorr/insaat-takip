@@ -2308,12 +2308,11 @@ function logout() {
   localStorage.removeItem('insaatTakipUser');
   localStorage.removeItem('insaatTakipRemember');
   records = [];
-  renderAll();
-  // Giriş ekranını sıfırla
-  loginGoBack();
-  document.getElementById('userList').style.display = '';
-  document.getElementById('userSelectOverlay').classList.add('open');
   document.getElementById('profileMenu').classList.remove('open');
+  // Kullanıcı listesini çiz
+  openUserSelect();
+  // Step1'e dön
+  loginGoBack();
 }
 
 function updateProfileUI() {
