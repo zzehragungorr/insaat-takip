@@ -2251,6 +2251,60 @@ function togglePwdVis(inputId, btn) {
   }
 }
 
+
+// ── BRUTE FORCE KORUMA ──────────────────────────
+var MAX_ATTEMPTS = 3;      // Max yanlış deneme
+var LOCK_DURATION = 5 * 60 * 1000; // 5 dakika (ms)
+
+function getLockKey(username) {
+  return 'bf_' + username;
+}
+
+function getAttemptData(username) {
+  try {
+    var data = localStorage.getItem(getLockKey(username));
+    return data ? JSON.parse(data) : {attempts: 0, lockedUntil: 0};
+  } catch(e) { return {attempts: 0, lockedUntil: 0}; }
+}
+
+function setAttemptData(username, data) {
+  localStorage.setItem(getLockKey(username), JSON.stringify(data));
+}
+
+function isLocked(username) {
+  var data = getAttemptData(username);
+  if(data.lockedUntil && Date.now() < data.lockedUntil) {
+    return data.lockedUntil;
+  }
+  return false;
+}
+
+function recordFailedAttempt(username) {
+  var data = getAttemptData(username);
+  data.attempts = (data.attempts || 0) + 1;
+  if(data.attempts >= MAX_ATTEMPTS) {
+    data.lockedUntil = Date.now() + LOCK_DURATION;
+    data.attempts = 0;
+  }
+  setAttemptData(username, data);
+  return data;
+}
+
+function resetAttempts(username) {
+  localStorage.removeItem(getLockKey(username));
+}
+
+function getRemainingTime(lockedUntil) {
+  var remaining = Math.ceil((lockedUntil - Date.now()) / 1000);
+  if(remaining >= 60) return Math.ceil(remaining/60) + ' dakika';
+  return remaining + ' saniye';
+}
+
+function getRemainingAttempts(username) {
+  var data = getAttemptData(username);
+  return MAX_ATTEMPTS - (data.attempts || 0);
+}
+
 function simpleHash(str) {
   // Basit ama tersine çevrilemeyen hash
   var hash = 0;
@@ -2331,6 +2385,20 @@ function doLogin() {
     return;
   }
 
+  // Hesap kilitli mi kontrol et
+  var lockedUntil = isLocked(username);
+  if(lockedUntil) {
+    err.textContent = '🔒 Çok fazla yanlış deneme! ' + getRemainingTime(lockedUntil) + ' sonra tekrar deneyin.';
+    err.style.display = 'block';
+    if(btn) { btn.disabled=true; }
+    // Kilit kalkınca butonu aktif et
+    setTimeout(function(){
+      if(btn) { btn.disabled=false; }
+      err.style.display='none';
+    }, lockedUntil - Date.now());
+    return;
+  }
+
   if(btn) { btn.disabled=true; btn.textContent='Kontrol ediliyor...'; }
 
   // Şifre boş ve kaydedilmiş kullanıcı ise — şifresiz doğrula
@@ -2354,13 +2422,25 @@ function doLogin() {
   verifyPassword(user.id, pwd, function(ok){
     if(btn) { btn.disabled=false; btn.textContent='Giriş Yap'; }
     if(!ok) {
-      err.textContent = '⚠ Şifre hatalı, tekrar deneyin.';
-      err.style.display = 'block';
+      var attemptData = recordFailedAttempt(username);
       var inp = document.getElementById('loginPassword');
       inp.classList.add('error');
       setTimeout(function(){ inp.classList.remove('error'); }, 300);
       inp.value = '';
-      inp.focus();
+
+      if(isLocked(username)) {
+        err.textContent = '🔒 ' + MAX_ATTEMPTS + ' yanlış deneme! Hesabınız 5 dakika kilitlendi.';
+        if(btn) btn.disabled = true;
+        setTimeout(function(){
+          if(btn) btn.disabled=false;
+          err.style.display='none';
+        }, LOCK_DURATION);
+      } else {
+        var kalan = getRemainingAttempts(username);
+        err.textContent = '⚠ Şifre hatalı! ' + kalan + ' deneme hakkınız kaldı.';
+        inp.focus();
+      }
+      err.style.display = 'block';
       return;
     }
     var remember = document.getElementById('rememberMe').checked;
@@ -2373,6 +2453,7 @@ function doLogin() {
       localStorage.removeItem('insaatTakipRemember');
     }
     // Tarayıcı kapanana kadar oturum — sessionStorage
+    resetAttempts(username);
     sessionStorage.setItem('insaatTakipSession', user.id);
     currentUser = user;
     _loginTempUser = user;
