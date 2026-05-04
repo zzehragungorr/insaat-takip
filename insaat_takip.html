@@ -288,6 +288,33 @@ canvas{max-width:160px;max-height:160px;flex-shrink:0}
 .mp-stat-num{font-size:22px;font-weight:700;font-family:'IBM Plex Mono',monospace;line-height:1}
 .mp-stat-lbl{font-size:10px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-top:3px}
 
+
+@media (max-width:768px){
+  .sidebar{width:200px;min-width:200px}
+  .topbar{padding:0 12px;height:50px}
+  .topbar-r .btn span{display:none}
+  .stats-strip{padding:8px 12px;gap:6px}
+  .stat-num{font-size:18px}
+  .table-area{padding:10px 12px}
+  table{font-size:11px}
+  th,td{padding:6px 8px!important}
+  .profile-btn span{display:none}
+  #profileName{display:none}
+}
+@media (max-width:540px){
+  body{flex-direction:column}
+  .sidebar{width:100%;min-width:unset;height:auto;position:relative;flex-direction:row;overflow-x:auto}
+  .sb-brand{padding:10px 14px;border-bottom:none;border-right:1px solid var(--sb-border);min-width:160px}
+  .sb-sec{display:flex;flex-direction:row;padding:8px;gap:4px;align-items:center;flex-wrap:nowrap;overflow-x:auto}
+  .sb-sec-lbl{display:none}
+  .nav-item{white-space:nowrap;padding:6px 10px;font-size:11px}
+  .nav-badge{display:none}
+  .sb-footer{display:none}
+  .main{overflow:auto}
+  .stats-strip{flex-wrap:wrap}
+  .stat-tile{min-width:80px}
+}
+
 @media print{body{display:none!important}}
 
 /* SÜTUN FİLTRE */
@@ -422,6 +449,11 @@ loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js', f
       <svg class="nav-svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><line x1="8" y1="4" x2="8" y2="8"/><circle cx="8" cy="11" r=".8" fill="currentColor"/></svg>
       Geciken İşler <span class="nav-badge" id="nb_gecikme">0</span>
     </button>
+    <div class="sb-sec-lbl" style="margin-top:8px">Arşiv</div>
+    <button class="nav-item" onclick="switchTabById('tab-archive')">
+      <svg class="nav-svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3" width="14" height="3" rx="1"/><path d="M2 6v7a1 1 0 001 1h10a1 1 0 001-1V6"/><line x1="6" y1="9" x2="10" y2="9"/></svg>
+      Arşiv <span class="nav-badge" id="nb_archive">0</span>
+    </button>
   </div>
   <div class="sb-footer">İnşaat İşleri Takip · v3.0<br><span id="footer-date" style="margin-top:2px;display:block"></span></div>
 </aside>
@@ -484,6 +516,9 @@ loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js', f
     <button class="tab-btn" id="tab-btn-myworks" onclick="switchTab('tab-myworks',this)">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="5" r="3"/><path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/></svg>İşlerim
     </button>
+    <button class="tab-btn" id="tab-btn-archive" onclick="switchTab('tab-archive',this)">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3" width="14" height="3" rx="1"/><path d="M2 6v7a1 1 0 001 1h10a1 1 0 001-1V6"/><line x1="6" y1="9" x2="10" y2="9"/></svg>Arşiv
+    </button>
   </div>
 
   <div class="filter-strip" id="filterStrip"></div>
@@ -531,6 +566,14 @@ loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js', f
   </div>
 
   <div class="tab-content" id="tab-charts">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+      <span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">Dönem:</span>
+      <button class="chip active" id="cp_all" onclick="setChartPeriod('all',this)">Tümü</button>
+      <button class="chip" id="cp_month" onclick="setChartPeriod('month',this)">Bu Ay</button>
+      <button class="chip" id="cp_quarter" onclick="setChartPeriod('quarter',this)">Bu Çeyrek</button>
+      <button class="chip" id="cp_year" onclick="setChartPeriod('year',this)">Bu Yıl</button>
+      <span id="chartPeriodLabel" style="font-size:11px;color:var(--text3);margin-left:8px"></span>
+    </div>
     <div class="chart-grid">
       <div class="chart-card">
         <div class="chart-title">Durum Dağılımı</div>
@@ -574,6 +617,26 @@ loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js', f
     </div>
     <div id="myworksStats" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px"></div>
     <div id="myworksList"></div>
+  </div>
+
+</div>
+
+  <!-- TAB: ARŞİV -->
+  <div class="tab-content" id="tab-archive">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div>
+        <div style="font-size:15px;font-weight:600;color:var(--text)">📦 Arşiv</div>
+        <div style="font-size:11px;color:var(--text3)" id="archiveSubtitle">Tamamlanan ve iptal edilen işler</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="text" id="archiveSearch" placeholder="🔍 Ara..." oninput="renderArchive()"
+          style="padding:7px 12px;border:1px solid var(--border);border-radius:var(--r);font-size:12.5px;font-family:inherit;outline:none;width:200px">
+        <button class="btn" onclick="exportArchiveExcel()">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="width:13px;height:13px"><rect x="2" y="1" width="12" height="14" rx="1.5"/></svg>Excel
+        </button>
+      </div>
+    </div>
+    <div id="archiveList"></div>
   </div>
 
 </div>
@@ -869,6 +932,12 @@ function getFiltered(){
 function renderAll(){
   renderStats(); renderFilters(); renderTable();
   if(activeTab==='tab-charts') renderCharts();
+  if(activeTab==='tab-myworks') renderMyWorks();
+  if(activeTab==='tab-archive') renderArchive();
+  // Arşiv sayacını güncelle
+  var archCount = records.filter(function(r){return r.durum==='Tamamlandı'||r.durum==='İptal';}).length;
+  var nbArc = document.getElementById('nb_archive');
+  if(nbArc) nbArc.textContent = archCount;
 }
 
 function renderStats(){
@@ -957,8 +1026,8 @@ function quickStatus(id,val){
 }
 
 function renderCharts(){
-  // Aktif filtreye göre veri al
-  var cdata = getFiltered();
+  // Dönem filtresine göre veri al
+  var cdata = getChartData();
   var cdataLabel = deptFilter ? deptFilter+' Departmanı' : 'Tüm Departmanlar';
 
   var statuses=['Devam Ediyor','Bekliyor','Tamamlandı','İptal','Revizyon'];
@@ -1295,6 +1364,16 @@ function saveRecord(){
   showToast('Kaydediliyor...');
   if(window._fbSave){
     var isEdit = !!editId;
+    // Geçmiş kaydı ekle
+    var histEntry = {
+      id: genId(),
+      kayitId: obj.id,
+      kullanici: currentUser ? currentUser.ad : '?',
+      zaman: Date.now(),
+      tip: editId ? 'guncelleme' : 'ekleme',
+      durum: obj.durum || ''
+    };
+    if(window._fbSaveHistory) window._fbSaveHistory(histEntry);
     window._fbSave(obj).then(function(){
       sendNotifications(obj, isEdit?'guncelleme':'yeni');
       showToast(isEdit?'Kayıt güncellendi ✓':'Yeni iş eklendi ✓');
@@ -1314,6 +1393,8 @@ function deleteRecord(id){
   if(!confirm('Bu kaydı silmek istediğinizden emin misiniz?'))return;
   closeDetail();
   if(window._fbDelete){
+    var histDel = {id:genId(),kayitId:id,kullanici:currentUser?currentUser.ad:'?',zaman:Date.now(),tip:'silme',durum:''};
+    if(window._fbSaveHistory) window._fbSaveHistory(histDel);
     window._fbDelete(id).then(function(){ showToast('Kayıt silindi'); })
     .catch(function(e){ showToast('⚠ Hata: '+e.message); });
   } else {
@@ -1378,6 +1459,9 @@ function switchTab(tabId,el){
   if(tabId==='tab-charts') renderCharts();
   if(tabId==='tab-myworks'){
     renderMyWorks();
+    document.getElementById('filterStrip').style.display='none';
+  } else if(tabId==='tab-archive'){
+    renderArchive();
     document.getElementById('filterStrip').style.display='none';
   } else {
     document.getElementById('filterStrip').style.display='';
@@ -2142,9 +2226,29 @@ function togglePwdVis(inputId, btn) {
   }
 }
 
+function simpleHash(str) {
+  // Basit ama tersine çevrilemeyen hash
+  var hash = 0;
+  for(var i=0;i<str.length;i++){
+    var c = str.charCodeAt(i);
+    hash = ((hash<<5)-hash)+c;
+    hash = hash & hash;
+  }
+  return 'h_'+Math.abs(hash).toString(36);
+}
 function getPassword(uid) {
-  var custom = localStorage.getItem('pwd_'+uid);
-  return custom || DEFAULT_PASSWORDS[uid] || 'Smart2026!';
+  var stored = localStorage.getItem('pwd_h_'+uid);
+  if(stored) return stored; // hash olarak saklanmış
+  var raw = localStorage.getItem('pwd_'+uid);
+  if(raw) return raw;
+  return DEFAULT_PASSWORDS[uid] || 'Smart2026!';
+}
+function verifyPassword(uid, input) {
+  var stored = localStorage.getItem('pwd_h_'+uid);
+  if(stored) return stored === simpleHash(input);
+  var raw = localStorage.getItem('pwd_'+uid);
+  if(raw) return raw === input;
+  return input === (DEFAULT_PASSWORDS[uid] || 'Smart2026!');
 }
 
 function loginGoBack() {
@@ -2174,8 +2278,7 @@ function showLoginStep2(uid) {
 function doLogin() {
   if(!_loginTempUser) return;
   var pwd = document.getElementById('loginPassword').value;
-  var correct = getPassword(_loginTempUser.id);
-  if(pwd !== correct) {
+  if(!verifyPassword(_loginTempUser.id, pwd)) {
     var inp = document.getElementById('loginPassword');
     var err = document.getElementById('loginError');
     err.style.display = 'block';
@@ -2264,7 +2367,8 @@ function changePassword() {
   if(nw !== cnf){
     err.textContent='⚠ Şifreler eşleşmiyor!'; err.style.display='block'; return;
   }
-  localStorage.setItem('pwd_'+currentUser.id, nw);
+  localStorage.setItem('pwd_h_'+currentUser.id, simpleHash(nw));
+  localStorage.removeItem('pwd_'+currentUser.id);
   closePwdModal();
   showToast('Şifre başarıyla değiştirildi ✓');
 }
@@ -3002,6 +3106,131 @@ function printMyWorks(){
   win.onload=function(){win.print();};
 }
 
+
+// ── ARŞİV ──────────────────────────────────────
+function renderArchive(){
+  var archivedRecs = records.filter(function(r){
+    return r.durum==='Tamamlandı' || r.durum==='İptal';
+  });
+  var q = (document.getElementById('archiveSearch')||{}).value||'';
+  if(q) archivedRecs = archivedRecs.filter(function(r){
+    return Object.values(r).some(function(v){return String(v).toLowerCase().indexOf(q.toLowerCase())>=0;});
+  });
+  document.getElementById('nb_archive').textContent = records.filter(function(r){return r.durum==='Tamamlandı'||r.durum==='İptal';}).length;
+  document.getElementById('archiveSubtitle').textContent = archivedRecs.length + ' kayıt';
+
+  var SC={'Tamamlandı':['#DBEAFE','#1E40AF'],'İptal':['#FEE2E2','#991B1B']};
+
+  if(!archivedRecs.length){
+    document.getElementById('archiveList').innerHTML=
+      '<div style="text-align:center;padding:60px;color:var(--text3)">'+
+      '<div style="font-size:36px;margin-bottom:12px">📦</div>'+
+      '<div style="font-size:14px;font-weight:500;color:var(--text2)">Arşivde kayıt yok</div>'+
+      '<div style="font-size:12px;margin-top:4px">Tamamlanan veya iptal edilen işler burada görünür</div></div>';
+    return;
+  }
+
+  var html='<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;box-shadow:var(--sh)">'+
+    '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12.5px;min-width:800px">'+
+    '<thead><tr style="background:#1E3250">'+
+      '<th style="padding:8px 11px;color:#fff;font-size:10px;font-weight:600;text-align:left;border-right:1px solid #2D4A66">#</th>'+
+      '<th style="padding:8px 11px;color:#fff;font-size:10px;font-weight:600;text-align:left;border-right:1px solid #2D4A66">Proje Adı</th>'+
+      '<th style="padding:8px 11px;color:#fff;font-size:10px;font-weight:600;text-align:left;border-right:1px solid #2D4A66">İş Tanımı</th>'+
+      '<th style="padding:8px 11px;color:#fff;font-size:10px;font-weight:600;text-align:left;border-right:1px solid #2D4A66">Departman</th>'+
+      '<th style="padding:8px 11px;color:#fff;font-size:10px;font-weight:600;text-align:left;border-right:1px solid #2D4A66">Sorumlu</th>'+
+      '<th style="padding:8px 11px;color:#fff;font-size:10px;font-weight:600;text-align:left;border-right:1px solid #2D4A66">Geliş</th>'+
+      '<th style="padding:8px 11px;color:#fff;font-size:10px;font-weight:600;text-align:left;border-right:1px solid #2D4A66">Bitiş</th>'+
+      '<th style="padding:8px 11px;color:#fff;font-size:10px;font-weight:600;text-align:left;border-right:1px solid #2D4A66">Çalışma</th>'+
+      '<th style="padding:8px 11px;color:#fff;font-size:10px;font-weight:600;text-align:left">Durum</th>'+
+    '</tr></thead><tbody>';
+
+  archivedRecs.forEach(function(r,i){
+    var sc = SC[r.durum]||['#F3F4F6','#374151'];
+    html+='<tr style="background:'+(i%2===1?'#F9FAFB':'#FFFFFF')+';border-bottom:1px solid #EEF2FF;cursor:pointer" id="arc_'+r.id+'">'+
+      '<td style="padding:7px 11px;color:#9CA3AF;font-size:11px;font-family:monospace">'+(i+1)+'</td>'+
+      '<td style="padding:7px 11px;font-weight:600;color:#111827">'+esc(r.projeAdi||'—')+'</td>'+
+      '<td style="padding:7px 11px;color:#4B5563;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(r.isTanimi||'—')+'</td>'+
+      '<td style="padding:7px 11px">'+esc(r.departman||'—')+'</td>'+
+      '<td style="padding:7px 11px">'+esc(r.sorumlu||'—')+'</td>'+
+      '<td style="padding:7px 11px;font-family:monospace;font-size:11.5px">'+(r.gelisTarihi?fmtDate(r.gelisTarihi):'—')+'</td>'+
+      '<td style="padding:7px 11px;font-family:monospace;font-size:11.5px">'+(r.bitisTarihi?fmtDate(r.bitisTarihi):'—')+'</td>'+
+      '<td style="padding:7px 11px;color:#1D4ED8;font-weight:600;font-family:monospace;font-size:11.5px">'+calcDays(r.bitisTarihi,r.baslangicTarihi)+'</td>'+
+      '<td style="padding:7px 11px"><span class="badge" style="background:'+sc[0]+';color:'+sc[1]+'">'+(r.durum||'—')+'</span></td>'+
+    '</tr>';
+  });
+  html+='</tbody></table></div></div>';
+  document.getElementById('archiveList').innerHTML=html;
+  document.getElementById('archiveList').onclick=function(e){
+    var row=e.target.closest('tr[id^="arc_"]');
+    if(!row) return;
+    showDetail(row.id.replace('arc_',''));
+  };
+}
+
+function exportArchiveExcel(){
+  if(typeof ExcelJS==='undefined'){showToast('⚠ Excel kütüphanesi yükleniyor...');return;}
+  var data=records.filter(function(r){return r.durum==='Tamamlandı'||r.durum==='İptal';});
+  if(!data.length){showToast('⚠ Arşivde kayıt yok');return;}
+  var wb=new ExcelJS.Workbook();
+  var ws=wb.addWorksheet('Arşiv');
+  ws.getRow(1).values=['#','Proje Adı','İş Tanımı','Departman','Sorumlu','Geliş','Bitiş','Çalışma','Durum'];
+  ws.getRow(1).font={bold:true,name:'Arial',size:10,color:{argb:'FFFFFFFF'}};
+  ws.getRow(1).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1E3250'}};
+  data.forEach(function(r,i){
+    ws.addRow([i+1,r.projeAdi||'',r.isTanimi||'',r.departman||'',r.sorumlu||'',
+      r.gelisTarihi?fmtDate(r.gelisTarihi):'',r.bitisTarihi?fmtDate(r.bitisTarihi):'',
+      calcDays(r.bitisTarihi,r.baslangicTarihi),r.durum||'']);
+  });
+  [5,22,28,14,18,12,12,12,14].forEach(function(w,i){ws.getColumn(i+1).width=w;});
+  wb.xlsx.writeBuffer().then(function(buffer){
+    var blob=new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    var a=document.createElement('a');a.href=URL.createObjectURL(blob);
+    a.download='arsiv_'+new Date().toLocaleDateString('tr-TR').replace(/\./g,'-')+'.xlsx';
+    a.click();showToast('Arşiv Excel indirildi ✓');
+  });
+}
+
+// ── RAPOR TARİH FİLTRESİ ────────────────────────
+var chartPeriod = 'all';
+function setChartPeriod(period, el){
+  chartPeriod = period;
+  document.querySelectorAll('[id^="cp_"]').forEach(function(b){b.classList.remove('active');});
+  el.classList.add('active');
+  var labels = {all:'',month:'Bu Ay',quarter:'Bu Çeyrek',year:'Bu Yıl'};
+  document.getElementById('chartPeriodLabel').textContent = labels[period]||'';
+  renderCharts();
+}
+
+function getChartData(){
+  var now = new Date();
+  var data = getFiltered();
+  if(chartPeriod==='month'){
+    data = data.filter(function(r){
+      if(!r.gelisTarihi) return false;
+      var d = new Date(r.gelisTarihi);
+      return d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth();
+    });
+  } else if(chartPeriod==='quarter'){
+    var q = Math.floor(now.getMonth()/3);
+    data = data.filter(function(r){
+      if(!r.gelisTarihi) return false;
+      var d = new Date(r.gelisTarihi);
+      return d.getFullYear()===now.getFullYear() && Math.floor(d.getMonth()/3)===q;
+    });
+  } else if(chartPeriod==='year'){
+    data = data.filter(function(r){
+      if(!r.gelisTarihi) return false;
+      return new Date(r.gelisTarihi).getFullYear()===now.getFullYear();
+    });
+  }
+  return data;
+}
+
+// ── FİREBASE GEÇMİŞ ─────────────────────────────
+// Bu Firebase bloğunda tanımlanacak — şimdilik placeholder
+window._fbSaveHistory = null;
+
+// switchTab'a arşiv ekle
 function showToast(msg){
   var t=document.getElementById('toast');t.textContent=msg;t.style.display='block';
   clearTimeout(t._t);t._t=setTimeout(function(){t.style.display='none';},2800);
