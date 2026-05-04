@@ -2490,46 +2490,36 @@ function initUserSelect() {
   }
 
   openUserSelect();
-
-  // Beni hatırla — kullanıcı adı ve şifre dolu gelsin, kullanıcı giriş yap desin
-  var savedUser = localStorage.getItem('insaatTakipUser');
-  var savedRemember = localStorage.getItem('insaatTakipRemember');
-  if(savedUser && savedRemember === '1') {
-    var u = KULLANICILAR.find(function(x){ return x.id === savedUser; });
-    if(u) {
-      setTimeout(function(){
-        var uEl = document.getElementById('loginUsername');
-        var pEl = document.getElementById('loginPassword');
-        if(uEl) uEl.value = u.username;
-        // Kaydedilmiş şifreyi getir ve doldur
-        if(window._fbGetPassword) {
-          window._fbGetPassword(u.id, function(hash){
-            // Şifreyi gösteremeyiz (hash) — sadece placeholder göster
-            if(pEl) {
-              pEl.placeholder = '••••••••••';
-              pEl.dataset.savedUid = u.id;
-            }
-          });
-        } else if(pEl) {
-          pEl.placeholder = '••••••••••';
-          pEl.dataset.savedUid = u.id;
-        }
-        document.getElementById('rememberMe').checked = true;
-      }, 100);
-    }
-  }
 }
 
 function openUserSelect() {
-  // Formu temizle
   var uEl = document.getElementById('loginUsername');
   var pEl = document.getElementById('loginPassword');
   var eEl = document.getElementById('loginError');
   if(uEl) uEl.value = '';
-  if(pEl) pEl.value = '';
+  if(pEl) { pEl.value = ''; pEl.dataset.savedUid = ''; }
   if(eEl) eEl.style.display = 'none';
   document.getElementById('userSelectOverlay').classList.add('open');
-  setTimeout(function(){ if(uEl) uEl.focus(); }, 100);
+
+  // Beni hatırla — kullanıcı adını doldur
+  var savedUser = localStorage.getItem('insaatTakipUser');
+  var savedRemember = localStorage.getItem('insaatTakipRemember');
+  if(savedUser && savedRemember === '1') {
+    var u = KULLANICILAR.find(function(x){ return x.id === savedUser; });
+    if(u && uEl) {
+      setTimeout(function(){
+        uEl.value = u.username;
+        if(pEl) {
+          pEl.placeholder = '••••••••';
+          pEl.dataset.savedUid = u.id;
+          pEl.focus();
+        }
+        document.getElementById('rememberMe').checked = true;
+      }, 50);
+    }
+  } else {
+    setTimeout(function(){ if(uEl) uEl.focus(); }, 100);
+  }
 }
 
 function selectUser(id) {
