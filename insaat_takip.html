@@ -241,7 +241,7 @@ canvas{max-width:160px;max-height:160px;flex-shrink:0}
 .login-back{background:none;border:none;color:#8DA8C4;cursor:pointer;font-size:12px;padding:0;margin-bottom:8px;display:flex;align-items:center;gap:4px;font-family:inherit}
 .login-back:hover{color:#fff}
 .login-selected-user{display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(255,255,255,.08);border-radius:var(--r);margin-bottom:14px}
-.login-input{width:100%;padding:10px 12px;border:1px solid rgba(255,255,255,.2);border-radius:var(--r);background:rgba(255,255,255,.1);color:#fff;font-size:13px;font-family:inherit;outline:none;transition:border .15s}
+.login-input{width:100%;padding:10px 12px;border:1px solid rgba(255,255,255,.25) !important;border-radius:var(--r);background:#1E3250 !important;color:#fff !important;font-size:13px;font-family:inherit;outline:none;transition:border .15s;-webkit-text-fill-color:#fff !important}.login-input:-webkit-autofill,.login-input:-webkit-autofill:hover,.login-input:-webkit-autofill:focus{-webkit-box-shadow:0 0 0px 1000px #1E3250 inset !important;-webkit-text-fill-color:#fff !important;border:1px solid rgba(255,255,255,.25) !important}input[type=password]::-ms-reveal,input[type=password]::-ms-clear{display:none}input[type=password]::-webkit-credentials-auto-fill-button{visibility:hidden}.login-input::placeholder{color:rgba(255,255,255,.2) !important}
 .login-input::placeholder{color:rgba(255,255,255,.4)}
 .login-input:focus{border-color:var(--sb-accent)}
 .login-input.error{border-color:#EF4444;animation:shake .3s ease}
@@ -814,34 +814,42 @@ loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js', f
   <div class="notif-list" id="notifList" style="max-height:228px;overflow-y:auto"></div>
 </div>
 
-<!-- KİM OLDUĞUNU SEÇ -->
+<!-- GİRİŞ EKRANI -->
 <div class="user-select-overlay" id="userSelectOverlay">
-  <div class="user-select-modal">
+  <div class="user-select-modal" style="width:380px">
     <div class="user-select-head">
-      <div id="loginStep1" class="login-step active">
-        <h3>👋 Hoş geldiniz!</h3>
-        <p>Giriş yapmak için hesabınızı seçin</p>
+      <h3>🔐 Giriş Yap</h3>
+      <p>Kullanıcı adı ve şifrenizle giriş yapın</p>
+    </div>
+    <div style="padding:20px;background:#1A2738;border-radius:0 0 var(--rl) var(--rl)">
+      <div style="margin-bottom:12px">
+        <label style="font-size:10.5px;font-weight:600;color:#8DA8C4;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Kullanıcı Adı</label>
+        <input type="text" class="login-input" id="loginUsername" placeholder="Kullanıcı Adınız"
+          onkeydown="if(event.key==='Enter')document.getElementById('loginPassword').focus()"
+          autocomplete="username" style="width:100%;color:#fff !important;background:#1E3250 !important;border:1px solid rgba(255,255,255,.2) !important">
       </div>
-      <div id="loginStep2" class="login-step">
-        <button class="login-back" onclick="loginGoBack()">← Geri</button>
-        <div class="login-selected-user" id="loginSelectedUser"></div>
+      <div style="margin-bottom:4px">
+        <label style="font-size:10.5px;font-weight:600;color:#8DA8C4;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Şifre</label>
         <div style="position:relative">
-          <input type="password" class="login-input" id="loginPassword" placeholder="Şifrenizi girin" onkeydown="if(event.key==='Enter')doLogin()" style="padding-right:38px">
-          <button type="button" onclick="togglePwdVis('loginPassword',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:rgba(255,255,255,.5);padding:0;line-height:1">
-            <svg id="eye_loginPassword" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="width:16px;height:16px"><path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/><circle cx="8" cy="8" r="2"/></svg>
+          <input type="password" class="login-input" id="loginPassword" placeholder="Şifreniz"
+            onkeydown="if(event.key==='Enter')doLogin()"
+            autocomplete="current-password" style="width:100%;padding-right:38px">
+          <button type="button" onclick="togglePwdVis('loginPassword',this)"
+            style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:rgba(255,255,255,.5);padding:0;line-height:1">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="width:16px;height:16px;pointer-events:none"><path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/><circle cx="8" cy="8" r="2"/></svg>
           </button>
         </div>
-        <div class="login-error" id="loginError">⚠ Şifre yanlış, tekrar deneyin.</div>
-        <div class="login-check-row">
-          <input type="checkbox" id="rememberMe" checked>
-          <label for="rememberMe">Beni hatırla (şifre sormasın)</label>
-        </div>
-        <button class="login-btn" onclick="doLogin()">Giriş Yap</button>
       </div>
+      <div class="login-error" id="loginError" style="margin-top:8px;display:none">⚠ Kullanıcı adı veya şifre hatalı.</div>
+      <div class="login-check-row" style="margin-top:10px">
+        <input type="checkbox" id="rememberMe" checked>
+        <label for="rememberMe">Beni hatırla</label>
+      </div>
+      <button class="login-btn" onclick="doLogin()">Giriş Yap</button>
     </div>
-    <div class="user-list" id="userList"></div>
   </div>
 </div>
+
 
 <!-- ŞİFRE DEĞİŞTİR MODALİ -->
 <div class="overlay" id="pwdOverlay" onclick="if(event.target===this)closePwdModal()">
@@ -1315,8 +1323,21 @@ function openModal(id){
   }
     },0);
   } else { resetForm(); }
-  // Yeni kayıtta bildirim seçimini sıfırla, düzenlemede koru
-  if(!id) _notifTargets.clear();
+  // Yeni kayıtta sıfırla, düzenlemede kayıttaki bildirim hedeflerini yükle
+  if(!id) {
+    _notifTargets.clear();
+  } else {
+    // Düzenleme — kayıttaki notifHedefler'den KULLANICI id'lerini bul
+    var editRec = records.find(function(x){ return x.id===id; });
+    _notifTargets.clear();
+    if(editRec && editRec.notifHedefler) {
+      var hedefAdlar = editRec.notifHedefler.split(',').map(function(s){ return s.trim(); });
+      hedefAdlar.forEach(function(ad){
+        var u = KULLANICILAR.find(function(k){ return k.ad === ad; });
+        if(u) _notifTargets.add(u.id);
+      });
+    }
+  }
   renderNotifTargets();
   document.getElementById('modalOverlay').classList.add('open');
   setTimeout(checkFormValid, 50);
@@ -2294,17 +2315,48 @@ function showLoginStep2(uid) {
 }
 
 function doLogin() {
-  if(!_loginTempUser) return;
+  var username = (document.getElementById('loginUsername').value||'').trim().toLowerCase();
   var pwd = document.getElementById('loginPassword').value;
   var btn = document.querySelector('.login-btn');
+  var err = document.getElementById('loginError');
+  err.style.display = 'none';
+
+  // Kullanıcı adını bul
+  var user = KULLANICILAR.find(function(u){ return u.username === username; });
+  if(!user) {
+    err.textContent = '⚠ Kullanıcı adı bulunamadı.';
+    err.style.display = 'block';
+    document.getElementById('loginUsername').classList.add('error');
+    setTimeout(function(){ document.getElementById('loginUsername').classList.remove('error'); }, 300);
+    return;
+  }
+
   if(btn) { btn.disabled=true; btn.textContent='Kontrol ediliyor...'; }
 
-  verifyPassword(_loginTempUser.id, pwd, function(ok){
+  // Şifre boş ve kaydedilmiş kullanıcı ise — şifresiz doğrula
+  var pEl = document.getElementById('loginPassword');
+  if(!pwd && pEl && pEl.dataset.savedUid === user.id) {
+    // Kayıtlı kullanıcı, şifre alanı boş bırakıldı — direkt giriş
+    var savedRemCheck = localStorage.getItem('insaatTakipRemember');
+    if(savedRemCheck === '1') {
+      sessionStorage.setItem('insaatTakipSession', user.id);
+      currentUser = user;
+      _loginTempUser = user;
+      document.getElementById('userSelectOverlay').classList.remove('open');
+      updateProfileUI();
+      updateNotifUI();
+      if(btn) { btn.disabled=false; btn.textContent='Giriş Yap'; }
+      showToast('Hoş geldiniz, '+user.ad.split(' ')[0]+'! 👋');
+      return;
+    }
+  }
+
+  verifyPassword(user.id, pwd, function(ok){
     if(btn) { btn.disabled=false; btn.textContent='Giriş Yap'; }
     if(!ok) {
-      var inp = document.getElementById('loginPassword');
-      var err = document.getElementById('loginError');
+      err.textContent = '⚠ Şifre hatalı, tekrar deneyin.';
       err.style.display = 'block';
+      var inp = document.getElementById('loginPassword');
       inp.classList.add('error');
       setTimeout(function(){ inp.classList.remove('error'); }, 300);
       inp.value = '';
@@ -2313,13 +2365,17 @@ function doLogin() {
     }
     var remember = document.getElementById('rememberMe').checked;
     if(remember) {
-      localStorage.setItem('insaatTakipUser', _loginTempUser.id);
+      // Kullanıcı adını hatırla
+      localStorage.setItem('insaatTakipUser', user.id);
       localStorage.setItem('insaatTakipRemember', '1');
     } else {
       localStorage.removeItem('insaatTakipUser');
       localStorage.removeItem('insaatTakipRemember');
     }
-    currentUser = _loginTempUser;
+    // Tarayıcı kapanana kadar oturum — sessionStorage
+    sessionStorage.setItem('insaatTakipSession', user.id);
+    currentUser = user;
+    _loginTempUser = user;
     document.getElementById('userSelectOverlay').classList.remove('open');
     updateProfileUI();
     updateNotifUI();
@@ -2331,12 +2387,10 @@ function logout() {
   currentUser = null;
   localStorage.removeItem('insaatTakipUser');
   localStorage.removeItem('insaatTakipRemember');
+  sessionStorage.removeItem('insaatTakipSession');
   records = [];
   document.getElementById('profileMenu').classList.remove('open');
-  // Kullanıcı listesini çiz
   openUserSelect();
-  // Step1'e dön
-  loginGoBack();
 }
 
 function updateProfileUI() {
@@ -2413,14 +2467,14 @@ function changePassword() {
 
 // ── KULLANICI & BİLDİRİM SİSTEMİ ──
 var KULLANICILAR = [
-  {id:'mustafa',  ad:'M.Mustafa Bakkaloğlu', dept:'İnşaat',  renk:'#1565C0'},
-  {id:'baris',    ad:'Barış Candan',          dept:'İnşaat',  renk:'#0D47A1'},
-  {id:'zehra',    ad:'Zehra Güngör',           dept:'İnşaat',  renk:'#6A1B9A'},
-  {id:'ibrahim',  ad:'İbrahim Çetiner',        dept:'Mekanik', renk:'#1B5E20'},
-  {id:'tamer',    ad:'Tamer Şengün',           dept:'Mekanik', renk:'#E65100'},
-  {id:'tolga',    ad:'M.Tolga Demirci',        dept:'Mekanik', renk:'#4A148C'},
-  {id:'omer',     ad:'Ömer Bürkek',            dept:'Harita',  renk:'#880E4F'},
-  {id:'ensar',    ad:'M.Ensar Kıcır',          dept:'Harita',  renk:'#004D40'},
+  {id:'mustafa',  ad:'M.Mustafa Bakkaloğlu', dept:'İnşaat',  renk:'#1565C0', username:'mbakkaloglu'},
+  {id:'baris',    ad:'Barış Candan',          dept:'İnşaat',  renk:'#0D47A1', username:'bcandan'},
+  {id:'zehra',    ad:'Zehra Güngör',          dept:'İnşaat',  renk:'#6A1B9A', username:'zgungor'},
+  {id:'ibrahim',  ad:'İbrahim Çetiner',       dept:'Mekanik', renk:'#1B5E20', username:'icetiner'},
+  {id:'tamer',    ad:'Tamer Şengün',          dept:'Mekanik', renk:'#E65100', username:'tsengun'},
+  {id:'tolga',    ad:'M.Tolga Demirci',       dept:'Mekanik', renk:'#4A148C', username:'tdemirci'},
+  {id:'omer',     ad:'Ömer Bürkek',           dept:'Harita',  renk:'#880E4F', username:'oburkek'},
+  {id:'ensar',    ad:'M.Ensar Kıcır',         dept:'Harita',  renk:'#004D40', username:'ekicir'},
 ];
 
 var currentUser = null;
@@ -2428,30 +2482,54 @@ var _notifTargets = new Set();
 window._allNotifs = [];
 
 function initUserSelect() {
-  var saved = localStorage.getItem('insaatTakipUser');
-  var remember = localStorage.getItem('insaatTakipRemember');
-  if(saved && remember === '1') {
-    currentUser = KULLANICILAR.find(function(u){ return u.id === saved; });
+  // sessionStorage — tarayıcı kapanmadan açık kalsın
+  var sessionUser = sessionStorage.getItem('insaatTakipSession');
+  if(sessionUser) {
+    currentUser = KULLANICILAR.find(function(u){ return u.id === sessionUser; });
     if(currentUser) { updateProfileUI(); updateNotifUI(); return; }
   }
+
   openUserSelect();
+
+  // Beni hatırla — kullanıcı adı ve şifre dolu gelsin, kullanıcı giriş yap desin
+  var savedUser = localStorage.getItem('insaatTakipUser');
+  var savedRemember = localStorage.getItem('insaatTakipRemember');
+  if(savedUser && savedRemember === '1') {
+    var u = KULLANICILAR.find(function(x){ return x.id === savedUser; });
+    if(u) {
+      setTimeout(function(){
+        var uEl = document.getElementById('loginUsername');
+        var pEl = document.getElementById('loginPassword');
+        if(uEl) uEl.value = u.username;
+        // Kaydedilmiş şifreyi getir ve doldur
+        if(window._fbGetPassword) {
+          window._fbGetPassword(u.id, function(hash){
+            // Şifreyi gösteremeyiz (hash) — sadece placeholder göster
+            if(pEl) {
+              pEl.placeholder = '••••••••••';
+              pEl.dataset.savedUid = u.id;
+            }
+          });
+        } else if(pEl) {
+          pEl.placeholder = '••••••••••';
+          pEl.dataset.savedUid = u.id;
+        }
+        document.getElementById('rememberMe').checked = true;
+      }, 100);
+    }
+  }
 }
 
 function openUserSelect() {
-  var list = document.getElementById('userList');
-  list.style.display = '';
-  list.innerHTML = KULLANICILAR.map(function(u){
-    var initials = u.ad.split(' ').map(function(x){return x[0];}).join('').slice(0,2).toUpperCase();
-    return '<button class="user-btn" data-uid="'+u.id+'" style="width:100%">'+
-      '<div class="user-avatar" style="background:'+u.renk+'">'+initials+'</div>'+
-      '<div><div style="font-weight:500">'+u.ad+'</div><div style="font-size:11px;color:var(--text3)">'+u.dept+'</div></div>'+
-    '</button>';
-  }).join('');
-  list.onclick = function(e){
-    var btn = e.target.closest('.user-btn');
-    if(btn) showLoginStep2(btn.getAttribute('data-uid'));
-  };
+  // Formu temizle
+  var uEl = document.getElementById('loginUsername');
+  var pEl = document.getElementById('loginPassword');
+  var eEl = document.getElementById('loginError');
+  if(uEl) uEl.value = '';
+  if(pEl) pEl.value = '';
+  if(eEl) eEl.style.display = 'none';
   document.getElementById('userSelectOverlay').classList.add('open');
+  setTimeout(function(){ if(uEl) uEl.focus(); }, 100);
 }
 
 function selectUser(id) {
@@ -2661,30 +2739,28 @@ function sendNotifications(obj, tip) {
   if(!currentUser) return;
 
   var projeAdi = obj.projeAdi || obj.isTanimi || '';
+  var kayitId  = obj.id;
   var tumKullanicilar = KULLANICILAR.filter(function(u){ return u.id !== currentUser.id; });
 
   tumKullanicilar.forEach(function(u){
     var hedefId = u.id;
     var secili = _notifTargets.has(hedefId);
 
-    if(secili) {
-      // Bildirim gönder — aynı kayıt için önceki bildirimi güncelle (yeni id ile)
-      // Önce bu kişiye bu kayıt için daha önce gönderilmiş bildirimi sil
-      var eskiNotif = (window._allNotifs||[]).find(function(n){
-        return n.gonderen === currentUser.id &&
-               n.hedef === hedefId &&
-               n.projeAdi === projeAdi;
-      });
-      if(eskiNotif && window._fbDeleteNotif) window._fbDeleteNotif(eskiNotif.id);
+    // Önce bu kayıta ait önceki bildirimi bul (kayitId veya projeAdi ile)
+    var eskiNotif = (window._allNotifs||[]).find(function(n){
+      return n.hedef === hedefId && (n.kayitId === kayitId || n.projeAdi === projeAdi) && n.gonderen === currentUser.id;
+    });
 
-      // Yeni bildirim gönder
+    if(secili) {
+      // Eski varsa sil, yeni gönder
+      if(eskiNotif && window._fbDeleteNotif) window._fbDeleteNotif(eskiNotif.id);
       var notif = {
         id: genId(),
         gonderen: currentUser.id,
         hedef: hedefId,
         tip: tip,
         projeAdi: projeAdi,
-        kayitId: obj.id,
+        kayitId: kayitId,
         mesaj: '',
         zaman: Date.now(),
         okundu: false
@@ -2692,12 +2768,8 @@ function sendNotifications(obj, tip) {
       if(window._fbSaveNotif) window._fbSaveNotif(notif);
 
     } else {
-      // Seçili değil — bu kişiye bu kayıt için daha önce gönderilmiş bildirimi geri çek
-      var eskiNotif2 = (window._allNotifs||[]).find(function(n){
-        return n.gonderen === currentUser.id &&
-               n.hedef === hedefId &&
-               n.projeAdi === projeAdi;
-      });
+      // Seçili değil — eski bildirimi geri çek
+      var eskiNotif2 = eskiNotif;
       if(eskiNotif2 && window._fbDeleteNotif) {
         window._fbDeleteNotif(eskiNotif2.id);
       }
