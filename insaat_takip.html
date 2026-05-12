@@ -16,9 +16,9 @@
   --r:6px;--rl:10px;--sh:0 1px 4px rgba(0,0,0,.08),0 2px 8px rgba(0,0,0,.04);--shl:0 8px 24px rgba(0,0,0,.12),0 2px 6px rgba(0,0,0,.06);
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%}
+html,body{margin:0;padding:0}
 body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--text);font-size:13px;display:flex;min-height:100vh}
-.sidebar{width:240px;min-width:240px;background:var(--sb);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;overflow-x:hidden}
+.sidebar{width:240px;min-width:240px;background:var(--sb);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;overflow-x:hidden;flex-shrink:0}
 .sb-brand{padding:20px 20px 16px;border-bottom:1px solid var(--sb-border)}
 .sb-icon{width:34px;height:34px;background:var(--sb-accent);border-radius:var(--r);display:flex;align-items:center;justify-content:center;font-size:16px;margin-bottom:9px}
 .sb-title{font-size:13px;font-weight:600;color:var(--sb-text-a);line-height:1.3}
@@ -33,7 +33,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .nav-badge{margin-left:auto;background:#1A2D42;color:var(--sb-text);font-size:10px;font-weight:500;padding:1px 6px;border-radius:10px;font-family:'IBM Plex Mono',monospace}
 .nav-item.active .nav-badge{background:var(--sb-accent);color:#fff}
 .sb-footer{margin-top:auto;padding:14px 20px;border-top:1px solid var(--sb-border);font-size:10px;color:#3D5A7A}
-.main{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}
+.main{flex:1;display:flex;flex-direction:column;min-width:0}
 .topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;height:54px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:20;box-shadow:0 1px 2px rgba(0,0,0,.06)}
 .topbar-l{display:flex;align-items:center;gap:12px}
 .page-title{font-size:14px;font-weight:600;letter-spacing:-.2px}
@@ -75,12 +75,12 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .chip{padding:3px 11px;border-radius:20px;border:1px solid var(--border);background:var(--surface);font-size:11.5px;color:var(--text2);cursor:pointer;transition:all .1s;font-family:'IBM Plex Sans',sans-serif}
 .chip:hover{border-color:var(--accent);color:var(--accent)}
 .chip.active{background:var(--accent);color:#fff;border-color:var(--accent)}
-.tab-content{display:none;flex:1;overflow:auto;padding:18px 24px}
-.tab-content.active{display:flex;flex-direction:column}
+.tab-content{display:none;flex-direction:column;overflow:auto;padding:18px 24px;-webkit-overflow-scrolling:touch}
+.tab-content.active{display:block;padding:18px 24px}
 .table-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;box-shadow:var(--sh)}
 .table-toolbar{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface2)}
 .table-toolbar-title{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.6px}
-.table-wrap{overflow-x:auto}
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
 table{width:100%;border-collapse:collapse;min-width:1500px;font-size:12.5px}
 thead tr{background:#FAFBFC}
 th{padding:8px 11px;text-align:left;font-size:10.5px;font-weight:600;color:var(--text3);white-space:nowrap;letter-spacing:.5px;text-transform:uppercase;border-bottom:1px solid var(--border);border-right:1px solid var(--border);cursor:pointer;user-select:none;transition:background .1s,color .1s}
@@ -315,6 +315,33 @@ canvas{max-width:160px;max-height:160px;flex-shrink:0}
   .stat-tile{min-width:80px}
 }
 
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:var(--surface2)}
+::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:#94A3B8}
+.tab-content.active{scrollbar-gutter:stable}
+
+/* YORUM SİSTEMİ */
+.yorum-panel{position:fixed;right:0;top:0;bottom:0;width:380px;background:var(--surface);border-left:1px solid var(--border);box-shadow:-8px 0 32px rgba(0,0,0,.15);z-index:150;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .25s ease;animation:none}
+.yorum-panel.open{transform:translateX(0)}
+.yorum-head{padding:14px 18px;border-bottom:1px solid var(--border);background:var(--surface2);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.yorum-head-title{font-size:13px;font-weight:600;color:var(--text)}
+.yorum-head-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.yorum-list{flex:1;overflow-y:auto;padding:12px}
+.yorum-item{margin-bottom:12px;padding:10px 12px;border-radius:var(--rl);border:1px solid var(--border);position:relative}
+.yorum-item.benim{background:#EFF6FF;border-color:#BFDBFE}
+.yorum-item.diger{background:var(--surface2);border-color:var(--border)}
+.yorum-avatar{width:24px;height:24px;border-radius:50%;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;vertical-align:middle;margin-right:6px}
+.yorum-author{font-size:11px;font-weight:600;color:var(--text)}
+.yorum-time{font-size:10px;color:var(--text3);margin-left:6px}
+.yorum-text{font-size:12.5px;color:var(--text2);margin-top:6px;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+.yorum-input-area{padding:12px;border-top:1px solid var(--border);background:var(--surface2);flex-shrink:0}
+.yorum-textarea{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r);font-size:12.5px;font-family:inherit;resize:vertical;min-height:72px;outline:none;background:var(--surface);color:var(--text);transition:border .15s}
+.yorum-textarea:focus{border-color:var(--accent)}
+.yorum-send-row{display:flex;align-items:center;justify-content:space-between;margin-top:8px}
+.yorum-count-badge{display:inline-flex;align-items:center;gap:3px;background:#EFF6FF;color:#1D4ED8;font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;border:1px solid #BFDBFE}
+.yorum-empty{text-align:center;padding:32px 16px;color:var(--text3);font-size:12px}
+
 @media print{body{display:none!important}}
 
 /* SÜTUN FİLTRE */
@@ -535,8 +562,8 @@ loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js', f
           <span style="font-size:11px;color:var(--text3)" id="tableToolbarSub"></span>
         </div>
       </div>
-      <div class="table-wrap">
-        <table>
+      <div class="table-wrap" style="overflow-x:auto;width:100%">
+        <table style="min-width:1600px">
           <thead>
             <tr>
               <th style="width:36px">#</th>
@@ -556,7 +583,7 @@ loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js', f
               <th style="width:85px">Çalışma</th>
               <th style="width:85px">Toplam</th>
               <th style="width:110px" id="th_durum"><div class="th-wrap" onclick="openColFilter('durum',this)"><span class="th-label">Durum</span><span class="filter-icon" id="fi_durum">▼</span></div></th>
-              <th style="width:110px">Bildirim</th><th style="width:100px;cursor:default">İşlem</th>
+              <th style="width:110px">Bildirim</th><th style="width:60px;cursor:default">Yorum</th><th style="width:100px;cursor:default">İşlem</th>
             </tr>
           </thead>
           <tbody id="tableBody"></tbody>
@@ -580,12 +607,16 @@ loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js', f
         <div class="pie-wrap"><canvas id="pieChart" width="160" height="160"></canvas><div class="pie-legend" id="pieLegend"></div></div>
       </div>
       <div class="chart-card">
-        <div class="chart-title">Aylık İş Sayısı (Son 8 Ay)</div>
+        <div class="chart-title">Aylık Tamamlanan İş (Son 8 Ay)</div>
         <div class="bar-chart" id="monthBar"></div>
       </div>
       <div class="chart-card full">
         <div class="chart-title">Departman Bazlı Özet</div>
         <div class="dept-summary" id="deptSummary"></div>
+      </div>
+      <div class="chart-card full">
+        <div class="chart-title">Kişi Bazlı Özet</div>
+        <div id="personSummary" style="overflow-x:auto"></div>
       </div>
       <div class="chart-card full">
         <div class="chart-title">Öncelik Dağılımı</div>
@@ -762,6 +793,26 @@ loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js', f
   <div class="detail-panel" id="detailPanel"></div>
 </div>
 <div class="toast" id="toast"></div>
+
+<!-- YORUM PANELİ -->
+<div class="yorum-panel" id="yorumPanel">
+  <div class="yorum-head">
+    <div>
+      <div class="yorum-head-title">💬 Yorumlar</div>
+      <div class="yorum-head-sub" id="yorumPanelSub">—</div>
+    </div>
+    <button onclick="closeYorumPanel()" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:20px;padding:0 4px">×</button>
+  </div>
+  <div class="yorum-list" id="yorumList"></div>
+  <div class="yorum-input-area">
+    <textarea class="yorum-textarea" id="yorumInput" placeholder="Yorum yazın..."></textarea>
+    <div class="yorum-send-row">
+      <span style="font-size:11px;color:var(--text3)">Enter ile gönder</span>
+      <button class="btn btn-primary" onclick="sendYorum()" style="font-size:12px;padding:6px 16px">Gönder</button>
+    </div>
+  </div>
+</div>
+<div id="yorumOverlay" onclick="closeYorumPanel()" style="display:none;position:fixed;inset:0;z-index:149;background:rgba(0,0,0,.2)"></div>
 
 <!-- PROJELERİM MODALİ -->
 <div class="overlay" id="myProjectsOverlay" onclick="if(event.target===this)closeMyProjects()">
@@ -984,7 +1035,7 @@ function renderTable(){
   var tb=document.getElementById('tableBody');
 
   if(!data.length){
-    tb.innerHTML='<tr class="empty-row"><td colspan="19"><div class="empty-icon">📂</div><div class="empty-msg">Kayıt bulunamadı</div><div class="empty-sub">Yeni iş ekleyin veya filtreyi değiştirin.</div></td></tr>';
+    tb.innerHTML='<tr class="empty-row"><td colspan="20"><div class="empty-icon">📂</div><div class="empty-msg">Kayıt bulunamadı</div><div class="empty-sub">Yeni iş ekleyin veya filtreyi değiştirin.</div></td></tr>';
     return;
   }
   var pDotCls={'Kritik':'prio-Kritik','Yüksek':'prio-Yuksek','Orta':'prio-Orta','Düşük':'prio-Dusuk'};
@@ -994,8 +1045,7 @@ function renderTable(){
     var ss='<select style="'+statusStyle(r.durum)+'" onclick="event.stopPropagation()" onchange="quickStatus(\''+r.id+'\',this.value)">'+
       ['Bekliyor','Devam Ediyor','Revizyon','Tamamlandı','İptal'].map(function(s){return '<option value="'+s+'"'+(r.durum===s?' selected':'')+'>'+s+'</option>';}).join('')+'</select>';
     var lnk=r.dosyaLink?'<a href="'+esc(r.dosyaLink)+'" target="_blank" onclick="event.stopPropagation()" class="act-btn" title="Dosyayı Aç"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2H2v12h12v-4"/><polyline points="9,2 14,2 14,7"/><line x1="6" y1="10" x2="14" y2="2"/></svg></a>':'';
-    return '<tr'+(od?' class="overdue"':'')+' onclick="showDetail(\''+r.id+'\')">'+
-      '<td class="num">'+(i+1)+'</td>'+
+    return '<tr'+(od?' class="overdue"':'')+' id="tr_'+r.id+'">'+'<td class="num">'+(i+1)+'</td>'+
       '<td><span class="prio-dot '+(pDotCls[r.oncelik]||'prio-Orta')+'" title="'+(r.oncelik||'Orta')+'"></span> '+(r.oncelik||'Orta')+'</td>'+
       '<td>'+(r.projeTalebi?'<span class="badge badge-'+(talepCls[r.projeTalebi]||'bekliyor')+'">'+esc(r.projeTalebi)+'</span>':'—')+'</td>'+
       '<td class="bold" title="'+esc(r.projeAdi)+'">'+(od?'⚠ ':'')+esc(r.projeAdi||'—')+'</td>'+
@@ -1015,8 +1065,14 @@ function renderTable(){
       '<td style="font-size:11px;color:var(--text2)">'+
       (r.notifHedefler ? '<span title="Gönderen: '+(r.notifGonderen||'?')+'&#10;Alıcılar: '+esc(r.notifHedefler)+'" style="cursor:help">🔔 '+esc(r.notifHedefler.split(',')[0].trim().split(' ').slice(-1)[0])+(r.notifHedefler.split(',').length>1?' +'+(r.notifHedefler.split(',').length-1):'')+'</span>' : '<span style="color:var(--text3)">—</span>')+
       '</td>'+
+      '<td onclick="event.stopPropagation();openYorumPanel(\''+r.id+'\')" style="text-align:center;cursor:pointer;color:#7C3AED" title="Yorumlar">'+
+      '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="width:14px;height:14px;vertical-align:middle"><path d="M2 2h12v10H9l-3 2v-2H2z"/></svg>'+
+      (r.yorumSayisi>0?' <span style="background:#7C3AED;color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:8px">'+r.yorumSayisi+'</span>':'')+
+      '</td>'+
       '<td onclick="event.stopPropagation()"><div class="action-cell">'+lnk+
       (r.notlar ? '<button class="act-btn" title="Notu Görüntüle" style="color:var(--accent)" id="nb_'+r.id+'" onclick="openNote(this)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="2"/><line x1="5" y1="5" x2="11" y2="5"/><line x1="5" y1="8" x2="9" y2="8"/></svg></button>' : '')+
+
+
         '<button class="act-btn" onclick="openModal(\''+r.id+'\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 2l3 3-9 9H2v-3z"/></svg></button>'+
         '<button class="act-btn del" onclick="deleteRecord(\''+r.id+'\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="2,4 14,4"/><path d="M6 4V2h4v2"/><path d="M3 4l1 10h8l1-10"/></svg></button>'+
       '</div></td></tr>';
@@ -1065,14 +1121,87 @@ function renderCharts(){
   }).join('');
 
   // Chart başlıklarına filtre bilgisi ekle
+  // Kişi bazlı özet
+  var personMap = {};
+  cdata.forEach(function(r){
+    var s = r.sorumlu || '—';
+    if(!personMap[s]) personMap[s] = {toplam:0, devam:0, bekliyor:0, tamam:0, revizyon:0, iptal:0, geciken:0, dept:r.departman||''};
+    personMap[s].toplam++;
+    if(r.durum==='Devam Ediyor') personMap[s].devam++;
+    else if(r.durum==='Bekliyor') personMap[s].bekliyor++;
+    else if(r.durum==='Tamamlandı') personMap[s].tamam++;
+    else if(r.durum==='Revizyon') personMap[s].revizyon++;
+    else if(r.durum==='İptal') personMap[s].iptal++;
+    if(isOD(r)) personMap[s].geciken++;
+  });
+
+  var persons = Object.keys(personMap).sort(function(a,b){
+    return personMap[b].toplam - personMap[a].toplam;
+  });
+
+  var DEPT_COLORS = {'İnşaat':'#1565C0','Mekanik':'#1B5E20','Harita':'#880E4F'};
+
+  var personHtml = '<table style="width:100%;border-collapse:collapse;font-size:12.5px">'+
+    '<thead><tr style="background:#1E3250">'+
+      '<th style="padding:9px 12px;color:#fff;font-size:10px;font-weight:600;text-align:left;border-right:1px solid #2D4A66">Kişi</th>'+
+      '<th style="padding:9px 12px;color:#fff;font-size:10px;font-weight:600;text-align:left;border-right:1px solid #2D4A66">Departman</th>'+
+      '<th style="padding:9px 12px;color:#fff;font-size:10px;font-weight:600;text-align:center;border-right:1px solid #2D4A66">Toplam</th>'+
+      '<th style="padding:9px 12px;color:#fff;font-size:10px;font-weight:600;text-align:center;border-right:1px solid #2D4A66">Devam</th>'+
+      '<th style="padding:9px 12px;color:#fff;font-size:10px;font-weight:600;text-align:center;border-right:1px solid #2D4A66">Bekliyor</th>'+
+      '<th style="padding:9px 12px;color:#fff;font-size:10px;font-weight:600;text-align:center;border-right:1px solid #2D4A66">Tamamlandı</th>'+
+      '<th style="padding:9px 12px;color:#fff;font-size:10px;font-weight:600;text-align:center;border-right:1px solid #2D4A66">Revizyon</th>'+
+      '<th style="padding:9px 12px;color:#fff;font-size:10px;font-weight:600;text-align:center;border-right:1px solid #2D4A66">Geciken</th>'+
+      '<th style="padding:9px 12px;color:#fff;font-size:10px;font-weight:600;text-align:left">Tamamlanma</th>'+
+    '</tr></thead><tbody>';
+
+  persons.forEach(function(name, i){
+    var p = personMap[name];
+    var pct = p.toplam > 0 ? Math.round(p.tamam / p.toplam * 100) : 0;
+    var deptColor = DEPT_COLORS[p.dept] || '#6B7280';
+    var rowBg = i % 2 === 1 ? '#F9FAFB' : '#FFFFFF';
+
+    // Kullanıcı avatarı için baş harfler
+    var initials = name.split(' ').map(function(x){return x[0];}).join('').slice(0,2).toUpperCase();
+    var u = KULLANICILAR.find(function(k){ return k.ad === name; });
+    var renk = u ? u.renk : '#6B7280';
+
+    personHtml += '<tr style="background:'+rowBg+';border-bottom:1px solid #EEF2FF">'+
+      '<td style="padding:9px 12px">'+
+        '<div style="display:flex;align-items:center;gap:8px">'+
+          '<div style="width:28px;height:28px;border-radius:50%;background:'+renk+';color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">'+initials+'</div>'+
+          '<span style="font-weight:600;color:#111827;font-size:12.5px">'+esc(name)+'</span>'+
+        '</div>'+
+      '</td>'+
+      '<td style="padding:9px 12px"><span style="background:'+deptColor+'22;color:'+deptColor+';font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px">'+esc(p.dept||'—')+'</span></td>'+
+      '<td style="padding:9px 12px;text-align:center;font-weight:700;color:#1D4ED8;font-size:14px">'+p.toplam+'</td>'+
+      '<td style="padding:9px 12px;text-align:center;font-weight:600;color:#059669">'+p.devam+'</td>'+
+      '<td style="padding:9px 12px;text-align:center;font-weight:600;color:#D97706">'+p.bekliyor+'</td>'+
+      '<td style="padding:9px 12px;text-align:center;font-weight:600;color:#2563EB">'+p.tamam+'</td>'+
+      '<td style="padding:9px 12px;text-align:center;font-weight:600;color:#92400E">'+p.revizyon+'</td>'+
+      '<td style="padding:9px 12px;text-align:center;font-weight:600;color:'+(p.geciken?'#DC2626':'#9CA3AF')+'">'+p.geciken+'</td>'+
+      '<td style="padding:9px 12px;min-width:120px">'+
+        '<div style="display:flex;align-items:center;gap:8px">'+
+          '<div style="flex:1;background:#E5E7EB;border-radius:4px;height:7px">'+
+            '<div style="background:'+(pct===100?'#059669':'#1D4ED8')+';width:'+pct+'%;height:100%;border-radius:4px;transition:width .3s"></div>'+
+          '</div>'+
+          '<span style="font-size:11px;font-weight:600;color:'+(pct===100?'#059669':'#1D4ED8')+';min-width:30px">'+pct+'%</span>'+
+        '</div>'+
+      '</td>'+
+    '</tr>';
+  });
+
+  personHtml += '</tbody></table>';
+  var pSumEl = document.getElementById('personSummary');
+  if(pSumEl) pSumEl.innerHTML = persons.length ? personHtml : '<div style="text-align:center;padding:30px;color:var(--text3)">Veri yok</div>';
+
   document.querySelector('#tab-charts .chart-card:nth-child(1) .chart-title').textContent =
     'Durum Dağılımı' + (deptFilter ? ' — '+deptFilter : '');
   document.querySelector('#tab-charts .chart-card:nth-child(2) .chart-title').textContent =
-    'Aylık İş Sayısı' + (deptFilter ? ' — '+deptFilter : ' — Son 8 Ay');
+    'Aylık Tamamlanan İş' + (deptFilter ? ' — '+deptFilter : ' — Son 8 Ay');
 
   // Aylık bar — filtrelenmiş veri
   var mm={};
-  cdata.forEach(function(r){if(!r.gelisTarihi)return;var m=r.gelisTarihi.slice(0,7);mm[m]=(mm[m]||0)+1;});
+  cdata.forEach(function(r){if(!r.bitisTarihi)return;var m=r.bitisTarihi.slice(0,7);mm[m]=(mm[m]||0)+1;});
   var months=Object.keys(mm).sort().slice(-8);
   var maxM=Math.max.apply(null,months.map(function(m){return mm[m];}).concat([1]));
   document.getElementById('monthBar').innerHTML=months.length?months.map(function(m){
@@ -1892,6 +2021,61 @@ function openPrintView(){
     if(r.durum==='Bekliyor') tanim_map[t].bekliyor++;
     if(isOD(r)) tanim_map[t].geciken++;
   });
+  // Kişi bazlı özet
+  var kisi_map = {};
+  data.forEach(function(r){
+    var s = r.sorumlu || '—';
+    if(!kisi_map[s]) kisi_map[s] = {toplam:0, tamam:0, devam:0, bekliyor:0, geciken:0, dept:r.departman||''};
+    kisi_map[s].toplam++;
+    if(r.durum==='Tamamlandı') kisi_map[s].tamam++;
+    if(r.durum==='Devam Ediyor') kisi_map[s].devam++;
+    if(r.durum==='Bekliyor') kisi_map[s].bekliyor++;
+    if(isOD(r)) kisi_map[s].geciken++;
+  });
+  var kisi_rows = Object.keys(kisi_map).sort(function(a,b){
+    return kisi_map[b].toplam - kisi_map[a].toplam;
+  }).map(function(k, i){
+    var v = kisi_map[k];
+    var pct = Math.round(v.tamam / v.toplam * 100);
+    return '<tr class="'+(i%2===1?'alt-row':'')+'">' +
+      '<td style="font-size:9px;font-weight:600;color:#1A1A2E">'+esc(k)+'</td>'+
+      '<td style="font-size:9px;color:#4B5563">'+esc(v.dept)+'</td>'+
+      '<td class="tc bold" style="color:#1565C0">'+v.toplam+'</td>'+
+      '<td class="tc" style="color:#059669">'+v.devam+'</td>'+
+      '<td class="tc" style="color:#D97706">'+v.bekliyor+'</td>'+
+      '<td class="tc" style="color:#2563EB">'+v.tamam+'</td>'+
+      (v.geciken?'<td class="tc" style="color:#C62828;font-weight:700">'+v.geciken+'</td>':'<td class="tc" style="color:#9CA3AF">—</td>')+
+      '<td style="padding:3px 8px"><div class="pbar-wrap"><div class="pbar-fill" style="width:'+pct+'%"></div><span class="pbar-lbl">'+pct+'%</span></div></td>'+
+    '</tr>';
+  }).join('');
+
+  // Talep türü özeti
+  var talep_map = {};
+  data.forEach(function(r){
+    var t = r.projeTalebi || '—';
+    if(!talep_map[t]) talep_map[t] = {toplam:0, tamam:0, devam:0, bekliyor:0};
+    talep_map[t].toplam++;
+    if(r.durum==='Tamamlandı') talep_map[t].tamam++;
+    if(r.durum==='Devam Ediyor') talep_map[t].devam++;
+    if(r.durum==='Bekliyor') talep_map[t].bekliyor++;
+  });
+  var talep_rows = Object.keys(talep_map).sort(function(a,b){
+    return talep_map[b].toplam - talep_map[a].toplam;
+  }).map(function(t, i){
+    var v = talep_map[t];
+    var pct = Math.round(v.tamam / v.toplam * 100);
+    var colors = {'Teklif':['#DBEAFE','#1E40AF'],'Uygulama':['#D1FAE5','#065F46'],'Ürün ve Yazılım Geliştirme':['#EDE9FE','#4C1D95']};
+    var c = colors[t] || ['#F3F4F6','#374151'];
+    return '<tr class="'+(i%2===1?'alt-row':'')+'">' +
+      '<td style="font-size:9px;font-weight:600"><span style="background:'+c[0]+';color:'+c[1]+';padding:2px 8px;border-radius:10px">'+esc(t)+'</span></td>'+
+      '<td class="tc bold" style="color:#1565C0">'+v.toplam+'</td>'+
+      '<td class="tc" style="color:#059669">'+v.devam+'</td>'+
+      '<td class="tc" style="color:#D97706">'+v.bekliyor+'</td>'+
+      '<td class="tc" style="color:#2563EB">'+v.tamam+'</td>'+
+      '<td style="padding:3px 8px"><div class="pbar-wrap"><div class="pbar-fill" style="width:'+pct+'%"></div><span class="pbar-lbl">'+pct+'%</span></div></td>'+
+    '</tr>';
+  }).join('');
+
   var tanim_rows = Object.keys(tanim_map).sort(function(a,b){
     return tanim_map[b].toplam - tanim_map[a].toplam;
   }).map(function(t, i){
@@ -2139,6 +2323,34 @@ function openPrintView(){
   '</div>'+
 
   // ═══ ANA TABLO ═══
+  (Object.keys(talep_map).length ?
+    '<div class="sec-title">Proje Talebi Bazlı Özet</div>'+
+    '<table class="dept-table" style="margin-bottom:12px">'+
+      '<thead><tr>'+
+        '<th style="min-width:160px">Talep Türü</th>'+
+        '<th class="tc">Toplam</th>'+
+        '<th class="tc">Devam</th>'+
+        '<th class="tc">Bekliyor</th>'+
+        '<th class="tc">Tamamlandı</th>'+
+        '<th style="min-width:100px;text-align:center">Tamamlanma</th>'+
+      '</tr></thead>'+
+      '<tbody>'+talep_rows+'</tbody>'+
+    '</table>' : '') +
+  (Object.keys(kisi_map).length ?
+    '<div class="sec-title">Kişi Bazlı Özet</div>'+
+    '<table class="dept-table" style="margin-bottom:12px">'+
+      '<thead><tr>'+
+        '<th style="min-width:160px">Kişi</th>'+
+        '<th>Departman</th>'+
+        '<th class="tc">Toplam</th>'+
+        '<th class="tc">Devam</th>'+
+        '<th class="tc">Bekliyor</th>'+
+        '<th class="tc">Tamamlandı</th>'+
+        '<th class="tc">Geciken</th>'+
+        '<th style="min-width:100px;text-align:center">Tamamlanma</th>'+
+      '</tr></thead>'+
+      '<tbody>'+kisi_rows+'</tbody>'+
+    '</table>' : '') +
   (Object.keys(tanim_map).length ?
     '<div class="sec-title">İş Tanımı Bazlı Özet</div>'+
     '<table class="dept-table" style="margin-bottom:12px">'+
@@ -2316,31 +2528,25 @@ function simpleHash(str) {
   return 'h_'+Math.abs(hash).toString(36);
 }
 function getPassword(uid) {
-  var stored = localStorage.getItem('pwd_h_'+uid);
-  if(stored) return stored; // hash olarak saklanmış
-  var raw = localStorage.getItem('pwd_'+uid);
-  if(raw) return raw;
+  // Artık localStorage kullanılmıyor, Firebase'den geliyor
   return DEFAULT_PASSWORDS[uid] || 'Smart2026!';
 }
 function verifyPassword(uid, input, callback) {
   var inputHash = simpleHash(input);
-  // Firebase'den şifreyi çek
+  // Her zaman önce Firebase'e bak
   if(window._fbGetPassword) {
     window._fbGetPassword(uid, function(fbHash){
       if(fbHash) {
+        // Firebase'de şifre var — onu kullan
         callback(fbHash === inputHash);
       } else {
-        // Firebase'de yoksa default veya localStorage
-        var local = localStorage.getItem('pwd_h_'+uid);
-        if(local) callback(local === inputHash);
-        else callback(input === (DEFAULT_PASSWORDS[uid] || 'Smart2026!'));
+        // Firebase'de yok — sadece default şifre
+        callback(input === (DEFAULT_PASSWORDS[uid] || 'Smart2026!'));
       }
     });
   } else {
-    // Firebase yok — localStorage veya default
-    var local = localStorage.getItem('pwd_h_'+uid);
-    if(local) callback(local === inputHash);
-    else callback(input === (DEFAULT_PASSWORDS[uid] || 'Smart2026!'));
+    // Firebase bağlantısı yok — default şifre
+    callback(input === (DEFAULT_PASSWORDS[uid] || 'Smart2026!'));
   }
 }
 
@@ -2679,7 +2885,7 @@ function renderNotifList() {
     var cls = n.okundu ? 'notif-item' : 'notif-item unread';
     var dot = n.okundu ? '' : '<div class="notif-unread-dot" style="flex-shrink:0"></div>';
     var proje = n.projeAdi ? '<br><em style="color:var(--text2);font-size:11px">'+esc(n.projeAdi)+'</em>' : '';
-    var tip = n.tip==='yeni' ? 'ekledi' : 'güncelledi';
+    var tip = n.tip==='yeni' ? 'ekledi' : (n.tip==='yorum' ? 'üzerine yorum yaptı' : 'güncelledi');
     html += '<div class="'+cls+'" id="ni_'+n.id+'">'+
       '<div class="user-avatar" style="background:'+renk+';width:32px;height:32px;font-size:12px;flex-shrink:0">'+initials+'</div>'+
       '<div class="notif-content" style="flex:1;min-width:0">'+
@@ -3136,6 +3342,23 @@ function renderMyWorks() {
   html += '</tbody></table></div></div>';
   document.getElementById('myworksList').innerHTML=html;
 
+  // Satır ve yorum butonlarına event listener ekle
+  document.querySelectorAll('[id^="tr_"]').forEach(function(tr){
+    tr.onclick = function(e){
+      // Yorum butonuna tıklandı mı?
+      var el = e.target;
+      while(el && el !== tr){
+        if(el.id && el.id.indexOf('yb_')===0){
+          openYorumPanel(el.id.replace('yb_',''));
+          return;
+        }
+        el = el.parentElement;
+      }
+      // Diğer act-btn'lere tıklandıysa satır açılmasın
+      if(e.target.closest('.act-btn') || e.target.closest('a') || e.target.closest('select')) return;
+      showDetail(tr.id.replace('tr_',''));
+    };
+  });
   document.getElementById('myworksList').onclick=function(e){
     var row=e.target.closest('tr[id^="mw_"]');
     if(!row) return;
@@ -3264,7 +3487,7 @@ function printMyWorks(){
   '.hdr h1{font-size:16px;font-weight:700}.hdr p{font-size:10px;color:#8DA8C4;margin-top:3px}'+
   '.stats{display:flex;gap:8px;margin-bottom:12px}.stat{flex:1;border-radius:6px;padding:8px;text-align:center}'+
   '.stat-n{font-size:18px;font-weight:700;font-family:monospace}.stat-l{font-size:9px;text-transform:uppercase;letter-spacing:.5px;margin-top:2px}'+
-  'table{width:100%;border-collapse:collapse}thead tr{background:#1E3250}'+
+  'table{width:100%;border-collapse:collapse;min-width:100%}thead tr{background:#1E3250}'+
   'th{color:#fff;padding:6px 8px;text-align:left;font-weight:700;font-size:9px}'+
   'td{padding:5px 8px;border-bottom:1px solid #EEF2FF;font-size:9px}'+
   '@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body>'+
@@ -3399,7 +3622,7 @@ function printArchive(){
   '<style>@page{size:A4 landscape;margin:10mm}*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:10px}'+
   '.hdr{background:linear-gradient(135deg,#0F1923,#1E3250);color:#fff;padding:14px 18px;border-radius:6px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}'+
   '.hdr h1{font-size:15px;font-weight:700}.hdr p{font-size:10px;color:#8DA8C4;margin-top:2px}'+
-  'table{width:100%;border-collapse:collapse}thead tr{background:#1E3250}'+
+  'table{width:100%;border-collapse:collapse;min-width:100%}thead tr{background:#1E3250}'+
   'th{color:#fff;padding:6px 8px;text-align:left;font-weight:700;font-size:9px}'+
   'td{padding:5px 8px;border-bottom:1px solid #EEF2FF;font-size:9px}'+
   '@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body>'+
@@ -3458,6 +3681,118 @@ function getChartData(){
 window._fbSaveHistory = null;
 
 // switchTab'a arşiv ekle
+
+// ── YORUM SİSTEMİ ──────────────────────────
+var _yorumKayitId = null;
+
+function openYorumPanel(rid) {
+  _yorumKayitId = rid;
+  var r = records.find(function(x){ return x.id===rid; });
+  document.getElementById('yorumPanelSub').textContent = r ? (r.projeAdi||r.isTanimi||'—') : '—';
+  document.getElementById('yorumInput').value = '';
+  document.getElementById('yorumPanel').classList.add('open');
+  document.getElementById('yorumOverlay').style.display = 'block';
+  loadYorumlar(rid);
+}
+
+function closeYorumPanel() {
+  document.getElementById('yorumPanel').classList.remove('open');
+  document.getElementById('yorumOverlay').style.display = 'none';
+  _yorumKayitId = null;
+}
+
+function loadYorumlar(rid) {
+  document.getElementById('yorumList').innerHTML = '<div class="yorum-empty">Yükleniyor...</div>';
+  if(!window._fbGetYorumlar){ document.getElementById('yorumList').innerHTML='<div class="yorum-empty">Firebase bağlı değil</div>'; return; }
+  window._fbGetYorumlar(rid, function(list){
+    renderYorumlar(list);
+  });
+}
+
+function renderYorumlar(list) {
+  var container = document.getElementById('yorumList');
+  if(!list.length){
+    container.innerHTML = '<div class="yorum-empty"><div style="font-size:28px;margin-bottom:8px">💬</div>Henüz yorum yok</div>';
+    return;
+  }
+  container.innerHTML = list.map(function(y){
+    var u = KULLANICILAR.find(function(k){ return k.id===y.kullaniciId; });
+    var initials = u ? getInitials(u.ad) : '?';
+    var renk = u ? u.renk : '#6B7280';
+    var ad = u ? u.ad : '?';
+    var benim = currentUser && y.kullaniciId === currentUser.id;
+    var zaman = y.zaman ? timeAgo(y.zaman) : '';
+    return '<div class="yorum-item '+(benim?'benim':'diger')+'">'+
+      '<div style="display:flex;align-items:center;margin-bottom:4px">'+
+        '<div class="yorum-avatar" style="background:'+renk+'">'+initials+'</div>'+
+        '<span class="yorum-author">'+esc(ad)+'</span>'+
+        '<span class="yorum-time">'+zaman+'</span>'+
+        (benim?'<span style="margin-left:auto;font-size:9px;background:#DBEAFE;color:#1D4ED8;padding:1px 6px;border-radius:8px">Ben</span>':'')+
+      '</div>'+
+      '<div class="yorum-text">'+esc(y.metin)+'</div>'+
+    '</div>';
+  }).join('');
+  // Aşağı kaydır
+  container.scrollTop = container.scrollHeight;
+}
+
+function sendYorum() {
+  if(!currentUser){ showToast('⚠ Giriş yapmanız gerekiyor'); return; }
+  if(!_yorumKayitId){ return; }
+  var metin = (document.getElementById('yorumInput').value||'').trim();
+  if(!metin){ showToast('⚠ Yorum boş olamaz'); return; }
+
+  var yorum = {
+    id: genId(),
+    kayitId: _yorumKayitId,
+    kullaniciId: currentUser.id,
+    kullaniciAd: currentUser.ad,
+    metin: metin,
+    zaman: Date.now()
+  };
+
+  if(!window._fbAddYorum){ showToast('⚠ Firebase bağlı değil'); return; }
+  window._fbAddYorum(yorum).then(function(){
+    document.getElementById('yorumInput').value = '';
+    loadYorumlar(_yorumKayitId);
+    // Kayıttaki yorum sayısını güncelle
+    var r = records.find(function(x){ return x.id===_yorumKayitId; });
+    if(r){
+      r.yorumSayisi = (r.yorumSayisi||0) + 1;
+      window._fbSave(r);
+    }
+    // Sorumluya bildirim gönder
+    if(r && r.sorumlu) {
+      var hedef = KULLANICILAR.find(function(u){ return u.ad===r.sorumlu && u.id!==currentUser.id; });
+      if(hedef && window._fbSaveNotif){
+        window._fbSaveNotif({
+          id: genId(),
+          gonderen: currentUser.id,
+          hedef: hedef.id,
+          tip: 'yorum',
+          projeAdi: r.projeAdi||r.isTanimi||'',
+          kayitId: r.id,
+          mesaj: metin.slice(0,60),
+          zaman: Date.now(),
+          okundu: false
+        });
+      }
+    }
+    showToast('Yorum eklendi ✓');
+    renderTable(); // yorum sayısını güncelle
+  }).catch(function(e){ showToast('⚠ Hata: '+e.message); });
+}
+
+// Enter ile gönder
+document.addEventListener('keydown', function(e){
+  if(e.key==='Enter' && !e.shiftKey && document.activeElement===document.getElementById('yorumInput')){
+    e.preventDefault();
+    sendYorum();
+  }
+});
+
+
+
 function showToast(msg){
   var t=document.getElementById('toast');t.textContent=msg;t.style.display='block';
   clearTimeout(t._t);t._t=setTimeout(function(){t.style.display='none';},2800);
@@ -3469,11 +3804,16 @@ document.addEventListener('keydown',function(e){
   if((e.ctrlKey||e.metaKey)&&e.key==='n'){e.preventDefault();openModal();}
 });
 window._appReady = true;
+// Eski localStorage şifrelerini temizle
+KULLANICILAR.forEach(function(u){
+  localStorage.removeItem('pwd_h_'+u.id);
+  localStorage.removeItem('pwd_'+u.id);
+});
 initUserSelect();
 // Not butonu — kalıcı event delegation
 
 document.getElementById('tableBody').innerHTML =
-  '<tr><td colspan="19" style="text-align:center;padding:40px;color:var(--text3)">'+
+  '<tr><td colspan="20" style="text-align:center;padding:40px;color:var(--text3)">'+
   '<div style="font-size:24px;margin-bottom:8px">🔄</div>'+
   '<div style="font-size:13px;font-weight:500">Veriler yükleniyor...</div>'+
   '</td></tr>';
