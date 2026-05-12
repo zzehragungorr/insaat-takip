@@ -418,6 +418,48 @@ function initFirebase() {
     snapshot.forEach(function(d) { window._allNotifs.push(d.data()); });
     if(window._appReady) updateNotifUI();
   });
+
+  // Yorum fonksiyonları
+  window._fbAddYorum = function(yorum) {
+    return db.collection('yorumlar').doc(yorum.id).set(yorum);
+  };
+  window._fbDeleteYorum = function(id) {
+    return db.collection('yorumlar').doc(id).delete();
+  };
+  window._fbGetYorumlar = function(kayitId, callback) {
+    db.collection('yorumlar').where('kayitId','==',kayitId).get()
+      .then(function(snap){
+        var list = [];
+        snap.forEach(function(d){ list.push(d.data()); });
+        list.sort(function(a,b){ return (a.zaman||0)-(b.zaman||0); });
+        callback(list);
+      })
+      .catch(function(e){
+        console.warn('Yorum yükleme hatası:', e);
+        callback([]);
+      });
+  };
+
+  // Şifre fonksiyonları
+  window._fbGetPassword = function(uid, callback) {
+    db.collection('sifreler').doc(uid).get().then(function(doc){
+      if(doc.exists && doc.data().hash) callback(doc.data().hash);
+      else callback(null);
+    }).catch(function(){ callback(null); });
+  };
+  window._fbSetPassword = function(uid, hash) {
+    return db.collection('sifreler').doc(uid).set({uid:uid, hash:hash, guncelleme:Date.now()});
+  };
+
+  // Geçmiş
+  window._fbSaveHistory = function(entry) {
+    return db.collection('gecmis').doc(entry.id).set(entry);
+  };
+
+  // Bildirim sil
+  window._fbDeleteNotif = function(id) {
+    return db.collection('bildirimler').doc(id).delete();
+  };
 }
 
 function loadScript(src, cb) {
@@ -1042,7 +1084,8 @@ function renderTable(){
   var talepCls={'Teklif':'bekliyor','Uygulama':'devam','Ürün ve Yazılım Geliştirme':'tamamlandi'};
   tb.innerHTML=data.map(function(r,i){
     var od=isOD(r);
-    var ss='<select style="'+statusStyle(r.durum)+'" onclick="event.stopPropagation()" onchange="quickStatus(\''+r.id+'\',this.value)">'+
+    var canDurum = canChangeDurum(r);
+    var ss='<select style="'+statusStyle(r.durum)+';'+(canDurum?'':'opacity:.6;cursor:not-allowed;pointer-events:none')+'" onclick="event.stopPropagation()" onchange="quickStatus(\''+r.id+'\',this.value)" '+(canDurum?'':'disabled')+'>'+
       ['Bekliyor','Devam Ediyor','Revizyon','Tamamlandı','İptal'].map(function(s){return '<option value="'+s+'"'+(r.durum===s?' selected':'')+'>'+s+'</option>';}).join('')+'</select>';
     var lnk=r.dosyaLink?'<a href="'+esc(r.dosyaLink)+'" target="_blank" onclick="event.stopPropagation()" class="act-btn" title="Dosyayı Aç"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2H2v12h12v-4"/><polyline points="9,2 14,2 14,7"/><line x1="6" y1="10" x2="14" y2="2"/></svg></a>':'';
     return '<tr'+(od?' class="overdue"':'')+' id="tr_'+r.id+'">'+'<td class="num">'+(i+1)+'</td>'+
@@ -1079,8 +1122,16 @@ function renderTable(){
   }).join('');
 }
 
+
+function canChangeDurum(r) {
+  if(!currentUser) return false;
+  // Aynı departmandaki kullanıcılar değiştirebilir
+  return currentUser.dept === r.departman;
+}
+
 function quickStatus(id,val){
   var r=records.find(function(x){return x.id===id;});
+  if(!canChangeDurum(r)){ showToast('⚠ Sadece '+r.departman+' departmanı durumu değiştirebilir!'); renderTable(); return; }
   if(r){
     r.durum=val;
     if(window._fbSave){
@@ -3722,18 +3773,28 @@ function renderYorumlar(list) {
     var ad = u ? u.ad : '?';
     var benim = currentUser && y.kullaniciId === currentUser.id;
     var zaman = y.zaman ? timeAgo(y.zaman) : '';
-    return '<div class="yorum-item '+(benim?'benim':'diger')+'">'+
+    return '<div class="yorum-item '+(benim?'benim':'diger')+'" id="yi_'+y.id+'">'+
       '<div style="display:flex;align-items:center;margin-bottom:4px">'+
         '<div class="yorum-avatar" style="background:'+renk+'">'+initials+'</div>'+
         '<span class="yorum-author">'+esc(ad)+'</span>'+
         '<span class="yorum-time">'+zaman+'</span>'+
-        (benim?'<span style="margin-left:auto;font-size:9px;background:#DBEAFE;color:#1D4ED8;padding:1px 6px;border-radius:8px">Ben</span>':'')+
+        (benim?'<span style="margin-left:auto;display:flex;align-items:center;gap:6px">'+
+          '<span style="font-size:9px;background:#DBEAFE;color:#1D4ED8;padding:1px 6px;border-radius:8px">Ben</span>'+
+          '<button data-yid="'+y.id+'" data-kid="'+y.kayitId+'" class="del-yorum-btn" style="background:none;border:none;cursor:pointer;color:#DC2626;font-size:13px;padding:0;line-height:1" title="Sil">🗑</button>'+
+        '</span>':'')+
       '</div>'+
       '<div class="yorum-text">'+esc(y.metin)+'</div>'+
     '</div>';
   }).join('');
   // Aşağı kaydır
   container.scrollTop = container.scrollHeight;
+  // Silme butonları
+  container.querySelectorAll('.del-yorum-btn').forEach(function(btn){
+    btn.onclick = function(e){
+      e.stopPropagation();
+      deleteYorum(btn.getAttribute('data-yid'), btn.getAttribute('data-kid'));
+    };
+  });
 }
 
 function sendYorum() {
@@ -3755,20 +3816,26 @@ function sendYorum() {
   window._fbAddYorum(yorum).then(function(){
     document.getElementById('yorumInput').value = '';
     loadYorumlar(_yorumKayitId);
-    // Kayıttaki yorum sayısını güncelle
+
     var r = records.find(function(x){ return x.id===_yorumKayitId; });
     if(r){
       r.yorumSayisi = (r.yorumSayisi||0) + 1;
       window._fbSave(r);
     }
-    // Sorumluya bildirim gönder
-    if(r && r.sorumlu) {
-      var hedef = KULLANICILAR.find(function(u){ return u.ad===r.sorumlu && u.id!==currentUser.id; });
-      if(hedef && window._fbSaveNotif){
+
+    // Sorumlu + onaylayana bildirim gönder (kendin hariç)
+    if(r && window._fbSaveNotif){
+      var hedefler = [];
+      [r.sorumlu, r.onaylayan].forEach(function(ad){
+        if(!ad) return;
+        var u = KULLANICILAR.find(function(k){ return k.ad===ad && k.id!==currentUser.id; });
+        if(u && hedefler.indexOf(u.id)===-1) hedefler.push(u.id);
+      });
+      hedefler.forEach(function(hedefId){
         window._fbSaveNotif({
           id: genId(),
           gonderen: currentUser.id,
-          hedef: hedef.id,
+          hedef: hedefId,
           tip: 'yorum',
           projeAdi: r.projeAdi||r.isTanimi||'',
           kayitId: r.id,
@@ -3776,10 +3843,27 @@ function sendYorum() {
           zaman: Date.now(),
           okundu: false
         });
-      }
+      });
     }
+
     showToast('Yorum eklendi ✓');
-    renderTable(); // yorum sayısını güncelle
+    renderTable();
+  }).catch(function(e){ showToast('⚠ Hata: '+e.message); });
+}
+
+function deleteYorum(yorumId, kayitId) {
+  if(!confirm('Bu yorumu silmek istediğinizden emin misiniz?')) return;
+  if(!window._fbDeleteYorum){ showToast('⚠ Firebase bağlı değil'); return; }
+  window._fbDeleteYorum(yorumId).then(function(){
+    // Yorum sayısını azalt
+    var r = records.find(function(x){ return x.id===kayitId; });
+    if(r && r.yorumSayisi > 0){
+      r.yorumSayisi--;
+      window._fbSave(r);
+    }
+    loadYorumlar(kayitId);
+    showToast('Yorum silindi ✓');
+    renderTable();
   }).catch(function(e){ showToast('⚠ Hata: '+e.message); });
 }
 
