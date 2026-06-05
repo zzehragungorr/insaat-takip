@@ -122,9 +122,9 @@ td.bold{font-weight:500}
 .empty-icon{width:44px;height:44px;background:var(--surface3);border-radius:var(--rl);display:flex;align-items:center;justify-content:center;margin:0 auto 10px;font-size:20px}
 .empty-msg{font-size:13px;color:var(--text2);font-weight:500;margin-bottom:3px}
 .empty-sub{font-size:11.5px;color:var(--text3)}
-.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
-.overlay.open{display:flex}
-.modal{background:var(--surface);border-radius:12px;box-shadow:var(--shl);width:720px;max-width:96vw;max-height:92vh;overflow-y:auto;animation:modalIn .18s ease;border:1px solid var(--border)}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.25);z-index:100;align-items:center;justify-content:center;backdrop-filter:blur(1px)}
+.overlay.open{display:block}
+.modal{background:var(--surface);border-radius:12px;box-shadow:var(--shl);width:720px;min-width:320px;border:1px solid var(--border);position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:101;max-height:92vh;overflow-y:auto;visibility:hidden}
 @keyframes modalIn{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
 .modal-head{padding:16px 20px 13px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:12px 12px 0 0}
 .modal-head-l{display:flex;align-items:center;gap:10px}
@@ -223,7 +223,7 @@ canvas{max-width:160px;max-height:160px;flex-shrink:0}
 .notif-empty-icon{font-size:28px;margin-bottom:8px}
 
 /* KİM OLDUĞUNU SEÇ MODALİ */
-.user-select-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
+.user-select-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
 .user-select-overlay.open{display:flex}
 .user-select-modal{background:var(--surface);border-radius:var(--rl);box-shadow:var(--shl);width:360px;padding:0;overflow:hidden;animation:modalIn .18s ease}
 .user-select-head{background:linear-gradient(135deg,#0F1923,#1E3250);padding:20px;color:#fff}
@@ -342,6 +342,24 @@ canvas{max-width:160px;max-height:160px;flex-shrink:0}
 .yorum-count-badge{display:inline-flex;align-items:center;gap:3px;background:#EFF6FF;color:#1D4ED8;font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;border:1px solid #BFDBFE}
 .yorum-empty{text-align:center;padding:32px 16px;color:var(--text3);font-size:12px}
 
+
+/* PROJE KÜTÜPHANESİ */
+.autocomplete-wrap{position:relative}
+.autocomplete-list{position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shl);z-index:500;max-height:200px;overflow-y:auto;display:none}
+.autocomplete-list.open{display:block}
+.autocomplete-item{padding:8px 12px;cursor:pointer;font-size:13px;color:var(--text2);display:flex;align-items:center;justify-content:space-between;transition:background .1s}
+.autocomplete-item:hover{background:var(--accent-l);color:var(--text)}
+.autocomplete-item-name{flex:1}
+.autocomplete-item-new{font-size:10px;color:var(--accent);font-weight:600;margin-left:8px}
+.kutuphane-modal{background:var(--surface);border-radius:var(--rl);box-shadow:var(--shl);width:520px;max-width:96vw;max-height:80vh;display:flex;flex-direction:column;animation:modalIn .18s ease}
+.kutuphane-head{background:linear-gradient(135deg,#0F1923,#1E3250);padding:16px 20px;border-radius:var(--rl) var(--rl) 0 0;display:flex;align-items:center;justify-content:space-between}
+.kutuphane-item{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border);transition:background .1s}
+.kutuphane-item:hover{background:var(--surface2)}
+.kutuphane-item-name{flex:1;font-size:13px;color:var(--text)}
+.kutuphane-edit-input{flex:1;padding:5px 8px;border:1px solid var(--accent);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none}
+
+tr.row-active{background:#EFF6FF !important;box-shadow:inset 3px 0 0 #1D4ED8;transition:background .2s}
+tr.row-active td{background:#EFF6FF !important}
 @media print{body{display:none!important}}
 
 /* SÜTUN FİLTRE */
@@ -423,6 +441,20 @@ function initFirebase() {
   window._fbAddYorum = function(yorum) {
     return db.collection('yorumlar').doc(yorum.id).set(yorum);
   };
+  window._fbAddProje = function(proje) {
+    return db.collection('projeler').doc(proje.id).set(proje);
+  };
+  window._fbUpdateProje = function(id, ad) {
+    return db.collection('projeler').doc(id).update({ad: ad});
+  };
+  window._fbDeleteProje = function(id) {
+    return db.collection('projeler').doc(id).delete();
+  };
+  // Projeleri gerçek zamanlı dinle
+  db.collection('projeler').orderBy('ad','asc').onSnapshot(function(snap){
+    window._projeler = [];
+    snap.forEach(function(d){ window._projeler.push(d.data()); });
+  });
   window._fbDeleteYorum = function(id) {
     return db.collection('yorumlar').doc(id).delete();
   };
@@ -553,6 +585,7 @@ loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js', f
             <div class="profile-menu-dept" id="pmDept">—</div>
           </div>
           <button class="profile-menu-item" onclick="switchTabById('tab-myworks');toggleProfileMenu()">📋 İşlerim</button>
+          <button class="profile-menu-item" onclick="openKutuphane();toggleProfileMenu()">📚 Proje Kütüphanesi</button>
           <button class="profile-menu-item" onclick="openPwdModal();toggleProfileMenu()">🔑 Şifre Değiştir</button>
           <button class="profile-menu-item danger" onclick="logout()">↩ Oturumu Kapat</button>
         </div>
@@ -740,7 +773,10 @@ loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js', f
           </div>
           <div class="form-group">
             <label>Proje Adı <span class="req" id="projeAdiReq">*</span></label>
-            <input type="text" id="f_projeAdi" placeholder="Proje adını girin" oninput="checkFormValid()">
+            <div class="autocomplete-wrap">
+            <input type="text" id="f_projeAdi" placeholder="Proje adını girin" oninput="checkFormValid();showProjeAutocomplete()" onclick="showProjeAutocomplete()" autocomplete="off">
+            <div class="autocomplete-list" id="projeAutocomplete"></div>
+          </div>
           </div>
           <div class="form-group">
             <label>Departman <span class="req">*</span></label>
@@ -836,6 +872,29 @@ loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js', f
 </div>
 <div class="toast" id="toast"></div>
 
+<!-- PROJE KÜTÜPHANESİ MODALİ -->
+<div class="overlay" id="kutuphaneOverlay" onclick="if(event.target===this)closeKutuphane()">
+  <div class="kutuphane-modal">
+    <div class="kutuphane-head">
+      <div>
+        <div style="font-size:14px;font-weight:600;color:#fff">📚 Proje Kütüphanesi</div>
+        <div style="font-size:11px;color:#8DA8C4;margin-top:2px">Proje adlarını yönetin</div>
+      </div>
+      <button onclick="closeKutuphane()" style="background:rgba(255,255,255,.1);border:none;color:rgba(255,255,255,.7);border-radius:var(--r);padding:4px 10px;font-size:18px;cursor:pointer">×</button>
+    </div>
+    <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px">
+      <input type="text" id="kutuphaneyeniInput" placeholder="Yeni proje adı ekle..." 
+        style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none"
+        onkeydown="if(event.key==='Enter')addProjeToKutuphane()">
+      <button class="btn btn-primary" onclick="addProjeToKutuphane()">+ Ekle</button>
+    </div>
+    <div style="overflow-y:auto;flex:1;padding:8px 0" id="kutuphaneList"></div>
+    <div style="padding:12px 16px;border-top:1px solid var(--border);background:var(--surface2);border-radius:0 0 var(--rl) var(--rl);text-align:right">
+      <button class="btn btn-primary" onclick="closeKutuphane()">Kapat</button>
+    </div>
+  </div>
+</div>
+
 <!-- YORUM PANELİ -->
 <div class="yorum-panel" id="yorumPanel">
   <div class="yorum-head">
@@ -878,7 +937,7 @@ loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js', f
   </div>
 </div>
 <!-- Not Modalı -->
-<div id="noteModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:400;align-items:center;justify-content:center;backdrop-filter:blur(2px)" onclick="closeNotePopup()">
+<div id="noteModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:400;align-items:center;justify-content:center" onclick="closeNotePopup()">
   <div style="background:var(--surface);border-radius:var(--rl);box-shadow:var(--shl);padding:0;width:400px;max-width:90vw;animation:modalIn .18s ease" onclick="event.stopPropagation()">
     <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:var(--rl) var(--rl) 0 0">
       <span style="font-size:13px;font-weight:600;color:var(--text)">📝 Detay Notlar</span>
@@ -1519,7 +1578,28 @@ function openModal(id){
     }
   }
   renderNotifTargets();
+  var modalEl = document.querySelector('#modalOverlay .modal');
+  if(modalEl){
+    // Her açılışta ortaya sıfırla
+    modalEl.style.left = '50%';
+    modalEl.style.top  = '50%';
+    modalEl.style.transform = 'translate(-50%,-50%)';
+    modalEl.style.visibility = 'hidden';
+  }
   document.getElementById('modalOverlay').classList.add('open');
+  requestAnimationFrame(function(){
+    requestAnimationFrame(function(){
+      if(modalEl){
+        modalEl.style.visibility = 'visible';
+        // Sürüklemeyi aktifleştir
+        var head = modalEl.querySelector('.modal-head');
+        if(head && !head._draggable){
+          makeDraggable(modalEl, head);
+          head._draggable = true;
+        }
+      }
+    });
+  });
   setTimeout(checkFormValid, 50);
 }
 function closeModal(){
@@ -1634,8 +1714,15 @@ function showDetail(id){
     '<div class="d-actions"><button class="btn btn-primary" onclick="openModal(\''+r.id+'\');closeDetail()">✏ Düzenle</button>'+
     '<button class="btn btn-danger" onclick="deleteRecord(\''+r.id+'\')">🗑 Sil</button></div></div>';
   document.getElementById('detailOverlay').classList.add('open');
+  // Aktif satırı vurgula
+  document.querySelectorAll('tr.row-active').forEach(function(tr){ tr.classList.remove('row-active'); });
+  var activeTr = document.getElementById('tr_'+id);
+  if(activeTr) activeTr.classList.add('row-active');
 }
-function closeDetail(){document.getElementById('detailOverlay').classList.remove('open');}
+function closeDetail(){
+  document.getElementById('detailOverlay').classList.remove('open');
+  document.querySelectorAll('tr.row-active').forEach(function(tr){ tr.classList.remove('row-active'); });
+}
 
 function setView(view,el){
   currentView=view;deptFilter=null;
@@ -3281,6 +3368,8 @@ function clearAllColFilters() {
 
 function canEdit(r) {
   if(!currentUser) return false;
+  // zgungor her kaydı düzenleyebilir
+  if(currentUser.username === 'zgungor') return true;
   // Kaydı ekleyen kişi veya ekleyen bilgisi yoksa (eski kayıtlar) herkes düzenleyebilir
   if(!r.ekleyen) return true;
   return r.ekleyen === currentUser.id;
@@ -3394,22 +3483,7 @@ function renderMyWorks() {
   document.getElementById('myworksList').innerHTML=html;
 
   // Satır ve yorum butonlarına event listener ekle
-  document.querySelectorAll('[id^="tr_"]').forEach(function(tr){
-    tr.onclick = function(e){
-      // Yorum butonuna tıklandı mı?
-      var el = e.target;
-      while(el && el !== tr){
-        if(el.id && el.id.indexOf('yb_')===0){
-          openYorumPanel(el.id.replace('yb_',''));
-          return;
-        }
-        el = el.parentElement;
-      }
-      // Diğer act-btn'lere tıklandıysa satır açılmasın
-      if(e.target.closest('.act-btn') || e.target.closest('a') || e.target.closest('select')) return;
-      showDetail(tr.id.replace('tr_',''));
-    };
-  });
+  // tr click — tableBody delegation ile yönetiliyor
   document.getElementById('myworksList').onclick=function(e){
     var row=e.target.closest('tr[id^="mw_"]');
     if(!row) return;
@@ -3877,6 +3951,187 @@ document.addEventListener('keydown', function(e){
 
 
 
+
+// ── PROJE KÜTÜPHANESİ ──────────────────────────
+window._projeler = [];
+
+function showProjeAutocomplete() {
+  var input = document.getElementById('f_projeAdi');
+  var list = document.getElementById('projeAutocomplete');
+  if(!input || !list) return;
+  var q = input.value.toLowerCase().trim();
+  var filtered = (window._projeler||[]).filter(function(p){
+    return !q || p.ad.toLowerCase().indexOf(q) !== -1;
+  });
+  if(!filtered.length && !q){ list.classList.remove('open'); return; }
+  var html = filtered.map(function(p){
+    return '<div class="autocomplete-item" data-ad="'+esc(p.ad)+'">'+
+      '<span class="autocomplete-item-name">'+esc(p.ad)+'</span>'+
+    '</div>';
+  }).join('');
+  if(q && !filtered.find(function(p){ return p.ad.toLowerCase()===q; })){
+    html += '<div class="autocomplete-item" data-new="1" data-ad="'+esc(input.value.trim())+'">'+
+      '<span class="autocomplete-item-name">'+esc(input.value.trim())+'</span>'+
+      '<span class="autocomplete-item-new">+ Yeni ekle</span>'+
+    '</div>';
+  }
+  list.innerHTML = html;
+  list.classList.add('open');
+  list.onclick = function(e){
+    var item = e.target.closest('.autocomplete-item');
+    if(!item) return;
+    var ad = item.getAttribute('data-ad');
+    input.value = ad;
+    list.classList.remove('open');
+    checkFormValid();
+    // Yeni proje ise kütüphaneye ekle
+    if(item.getAttribute('data-new')==='1' && ad){
+      var existing = (window._projeler||[]).find(function(p){ return p.ad===ad; });
+      if(!existing && window._fbAddProje){
+        window._fbAddProje({id:genId(), ad:ad, zaman:Date.now()});
+      }
+    }
+  };
+}
+
+// Dışa tıklayınca kapat
+document.addEventListener('click', function(e){
+  if(!e.target.closest('.autocomplete-wrap')){
+    var list = document.getElementById('projeAutocomplete');
+    if(list) list.classList.remove('open');
+  }
+});
+
+function openKutuphane() {
+  document.getElementById('kutuphaneOverlay').classList.add('open');
+  renderKutuphane();
+}
+function closeKutuphane() {
+  document.getElementById('kutuphaneOverlay').classList.remove('open');
+}
+
+function renderKutuphane() {
+  var list = document.getElementById('kutuphaneList');
+  var projeler = window._projeler||[];
+  if(!projeler.length){
+    list.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text3)">Henüz proje yok</div>';
+    return;
+  }
+  list.onclick = function(e){
+    var editBtn = e.target.closest('[data-eid]');
+    var delBtn  = e.target.closest('[data-did]');
+    if(editBtn) editProje(editBtn.getAttribute('data-eid'));
+    if(delBtn)  deleteProje(delBtn.getAttribute('data-did'));
+  };
+  list.innerHTML = projeler.map(function(p, i){
+    return '<div class="kutuphane-item" id="ki_'+p.id+'">'+
+      '<span class="kutuphane-item-name">'+esc(p.ad)+'</span>'+
+      '<div style="display:flex;gap:6px">'+
+        '<button class="btn" style="font-size:11px;padding:3px 10px" data-eid="'+p.id+'">✏</button>'+
+        '<button class="btn" style="font-size:11px;padding:3px 10px;color:var(--red);border-color:#FECACA" data-did="'+p.id+'">🗑</button>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
+function addProjeToKutuphane() {
+  var input = document.getElementById('kutuphaneyeniInput');
+  var ad = (input.value||'').trim();
+  if(!ad){ showToast('⚠ Proje adı boş olamaz'); return; }
+  var existing = (window._projeler||[]).find(function(p){ return p.ad.toLowerCase()===ad.toLowerCase(); });
+  if(existing){ showToast('⚠ Bu proje zaten mevcut'); return; }
+  if(!window._fbAddProje){ showToast('⚠ Firebase bağlı değil'); return; }
+  window._fbAddProje({id:genId(), ad:ad, zaman:Date.now()}).then(function(){
+    input.value = '';
+    showToast('Proje eklendi ✓');
+    setTimeout(renderKutuphane, 500);
+  });
+}
+
+function editProje(id) {
+  var item = document.getElementById('ki_'+id);
+  if(!item) return;
+  var p = (window._projeler||[]).find(function(x){ return x.id===id; });
+  if(!p) return;
+  item.innerHTML =
+    '<input class="kutuphane-edit-input" id="ei_'+id+'" value="'+esc(p.ad)+'" onkeydown="if(event.key===\'Enter\')document.getElementById(\'sb_'+id+'\').click()" >'+
+    '<div style="display:flex;gap:6px">'+
+      '<button class="btn btn-primary" id="sb_'+id+'" style="font-size:11px;padding:3px 10px" data-sid="'+id+'" onclick="saveProje(this.getAttribute(\'data-sid\'))">✓</button>'+
+      '<button class="btn" style="font-size:11px;padding:3px 10px" onclick="renderKutuphane()">İptal</button>'+
+    '</div>';
+  setTimeout(function(){ var el=document.getElementById('ei_'+id); if(el) el.focus(); }, 50);
+}
+
+function saveProje(id) {
+  var input = document.getElementById('ei_'+id);
+  if(!input) return;
+  var ad = input.value.trim();
+  if(!ad){ showToast('⚠ Proje adı boş olamaz'); return; }
+  if(!window._fbUpdateProje){ showToast('⚠ Firebase bağlı değil'); return; }
+  window._fbUpdateProje(id, ad).then(function(){
+    showToast('Proje güncellendi ✓');
+    setTimeout(renderKutuphane, 500);
+  });
+}
+
+function deleteProje(id) {
+  var p = (window._projeler||[]).find(function(x){ return x.id===id; });
+  if(!confirm((p?p.ad:'Bu proje')+' silinsin mi?')) return;
+  if(!window._fbDeleteProje){ showToast('⚠ Firebase bağlı değil'); return; }
+  window._fbDeleteProje(id).then(function(){
+    showToast('Proje silindi ✓');
+    setTimeout(renderKutuphane, 500);
+  });
+}
+
+
+// ── MODAL SÜRÜKLEME ──────────────────────────
+function makeDraggable(modalEl, handleEl) {
+  var offsetX = 0, offsetY = 0;
+
+  handleEl.addEventListener('mousedown', function(e){
+    if(e.target.closest('button')) return;
+
+    // transform → left/top geçişi
+    if(modalEl.style.transform && modalEl.style.transform !== 'none'){
+      var r0 = modalEl.getBoundingClientRect();
+      modalEl.style.transform = 'none';
+      modalEl.style.left = r0.left + 'px';
+      modalEl.style.top  = r0.top  + 'px';
+    }
+
+    var r = modalEl.getBoundingClientRect();
+    offsetX = e.clientX - r.left;
+    offsetY = e.clientY - r.top;
+
+    // GPU hızlandırma
+    modalEl.style.willChange = 'transform';
+    modalEl.style.transition  = 'none';
+    // left/top yerine translate kullan — en hızlı yöntem
+    modalEl.style.left = r.left + 'px';
+    modalEl.style.top  = r.top  + 'px';
+
+    document.addEventListener('mousemove', onDrag);
+    document.addEventListener('mouseup', stopDrag);
+    e.preventDefault();
+  });
+
+  function onDrag(e){
+    var x = e.clientX - offsetX;
+    var y = e.clientY - offsetY;
+    x = Math.max(0, Math.min(window.innerWidth  - modalEl.offsetWidth,  x));
+    y = Math.max(0, Math.min(window.innerHeight - modalEl.offsetHeight, y));
+    modalEl.style.left = x + 'px';
+    modalEl.style.top  = y + 'px';
+  }
+
+  function stopDrag(){
+    modalEl.style.willChange = 'auto';
+    document.removeEventListener('mousemove', onDrag);
+    document.removeEventListener('mouseup',   stopDrag);
+  }
+}
+
 function showToast(msg){
   var t=document.getElementById('toast');t.textContent=msg;t.style.display='block';
   clearTimeout(t._t);t._t=setTimeout(function(){t.style.display='none';},2800);
@@ -3888,6 +4143,20 @@ document.addEventListener('keydown',function(e){
   if((e.ctrlKey||e.metaKey)&&e.key==='n'){e.preventDefault();openModal();}
 });
 window._appReady = true;
+// Tablo satırı tıklama — kalıcı delegation
+document.getElementById('tableBody').addEventListener('click', function(e){
+  // Yorum butonu
+  var yb = e.target.closest('[id^="yb_"]');
+  if(yb){ openYorumPanel(yb.id.replace('yb_','')); return; }
+  // Diğer kontroller
+  if(e.target.closest('.act-btn')) return;
+  if(e.target.closest('a')) return;
+  if(e.target.closest('select')) return;
+  if(e.target.closest('button')) return;
+  // Satır bul
+  var tr = e.target.closest('tr[id^="tr_"]');
+  if(tr) showDetail(tr.id.replace('tr_',''));
+});
 // Eski localStorage şifrelerini temizle
 KULLANICILAR.forEach(function(u){
   localStorage.removeItem('pwd_h_'+u.id);
