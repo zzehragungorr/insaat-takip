@@ -994,7 +994,7 @@ function fmtDate(d){ if(!d) return '—'; var p=d.split('-'); return p[2]+'.'+p[
 function isOD(r){ return r.bitisTarihi && r.durum!=='Tamamlandı' && r.durum!=='İptal' && new Date(r.bitisTarihi)<new Date(); }
 
 var IS_TANIMLARI={
-  'İnşaat':['İnşaat İşleri Metraj Hesabı (Çelik, Yol, Drenaj, Telçit vb.)','Drenaj Projesi','TM Betonarme Projesi','DM Betonarme Projesi','Telçit Paftası','Sabit Sistem Çelik Konstrüksiyon Hesabı','Sabit Sistem Çelik Konstrüksiyon Çizimi','Sabit Sistem Çelik Konstrüksiyon Raporu','Carport Hesabı','Çelik Sevk Takibi','Dolguya Uygunluk Kontrolü'],
+  'İnşaat':['İnşaat İşleri Metraj Hesabı (Çelik, Yol, Drenaj, Telçit vb.)','Drenaj Projesi','TM Betonarme Projesi','DM Betonarme Projesi','Telçit Paftası','Sabit Sistem Çelik Konstrüksiyon Hesabı','Sabit Sistem Çelik Konstrüksiyon Çizimi','Sabit Sistem Çelik Konstrüksiyon Raporu','Carport Hesabı','Çelik Sevk Takibi','Dolguya Uygunluk Kontrolü','Çelik Konstrüksiyon Proje','Betonarme Statik Proje'],
   'Mekanik':['Tracker Sistem Çelik Konstrüksiyon Hesabı','Tracker Sistem Çelik Konstrüksiyon Çizimi','Tracker Sistem Çelik Konstrüksiyon Raporu','Telçit ve Kapı Detay Projesi','İnverter Support Projesi','Carport Çelik Hesabı','Çatı GES Konstrüksiyon','Prosedür ve Manuel Hazırlanması','Çakma-Çekme Testi','FAT','Tracker Devreye Alma','Satın Alma Öncesi Component Seçimi'],
   'Harita':['Tesviye Projesi (Panel Altı)','Yol Projesi','Tesviye ve Yol Projesi','Drenaj Projesi','Halihazır Harita Üretimi','Aplikasyon Elemanlarının Sayısallaştırılması']
 };
