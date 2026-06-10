@@ -1122,7 +1122,7 @@ var IS_TANIMLARI={
   'Mekanik':['Tracker Sistem Çelik Konstrüksiyon Hesabı','Tracker Sistem Çelik Konstrüksiyon Çizimi','Tracker Sistem Çelik Konstrüksiyon Raporu','Telçit ve Kapı Detay Projesi','İnverter Support Projesi','Carport Çelik Hesabı','Çatı GES Konstrüksiyon','Prosedür ve Manuel Hazırlanması','Çakma-Çekme Testi','FAT','Tracker Devreye Alma','Satın Alma Öncesi Component Seçimi'],
   'Harita':['Tesviye Projesi (Panel Altı)','Yol Projesi','Tesviye ve Yol Projesi','Drenaj Projesi','Halihazır Harita Üretimi','Aplikasyon Elemanlarının Sayısallaştırılması']
 };
-var SORUMLULAR={'İnşaat':['M.Mustafa Bakkaloğlu','Barış Candan','Zehra Güngör'],'Mekanik':['İbrahim Çetiner','Tamer Şengün','M.Tolga Demirci'],'Harita':['Ömer Bürkek','M.Ensar Kıcır']};
+var SORUMLULAR={'İnşaat':['M.Mustafa Bakkaloğlu','Barış Candan','Zehra Güngör','Serhat Demirdağ'],'Mekanik':['İbrahim Çetiner','Tamer Şengün','M.Tolga Demirci'],'Harita':['Ömer Bürkek','M.Ensar Kıcır']};
 var ONAYLAYANLAR={'İnşaat':['M.Mustafa Bakkaloğlu','Barış Candan'],'Mekanik':['M.Mustafa Bakkaloğlu','İbrahim Çetiner'],'Harita':['M.Mustafa Bakkaloğlu','Ömer Bürkek']};
 var PRIO_ORDER={'Kritik':4,'Yüksek':3,'Orta':2,'Düşük':1};
 
@@ -3066,6 +3066,7 @@ var KULLANICILAR = [
   {id:'tolga',    ad:'M.Tolga Demirci',       dept:'Mekanik', renk:'#4A148C', username:'tdemirci'},
   {id:'omer',     ad:'Ömer Bürkek',           dept:'Harita',  renk:'#880E4F', username:'oburkek'},
   {id:'ensar',    ad:'M.Ensar Kıcır',         dept:'Harita',  renk:'#004D40', username:'ekicir'},
+  {id:'serhat',   ad:'Serhat Demirdağ',        dept:'İnşaat',  renk:'#B45309', username:'sdemirdag'},
 ];
 
 var currentUser = null;
@@ -3233,10 +3234,9 @@ function notifClick(el) {
   if(!n) return;
   // Paneli kapat
   toggleNotifPanel();
-  // Kaydı bul — projeAdi ile eşleştir
-  var r = records.find(function(x){
-    return x.projeAdi === n.projeAdi || x.isTanimi === n.projeAdi;
-  });
+  // Kaydı bul — önce kayitId, sonra projeAdi ile
+  var r = records.find(function(x){ return x.id === n.kayitId; });
+  if(!r) r = records.find(function(x){ return x.projeAdi === n.projeAdi || x.isTanimi === n.projeAdi; });
   if(!r) { showToast('Kayıt bulunamadı'); return; }
   // Tüm filtre sıfırla ve listeyi göster
   currentView = 'all'; deptFilter = null;
