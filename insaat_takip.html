@@ -77,7 +77,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .chip.active{background:var(--accent);color:#fff;border-color:var(--accent)}
 .tab-content{display:none;flex-direction:column;overflow:auto;padding:18px 24px;-webkit-overflow-scrolling:touch}
 .tab-content.active{display:block;padding:18px 24px}
-.table-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;box-shadow:var(--sh)}
+.table-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);box-shadow:var(--sh)}
 .table-toolbar{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface2)}
 .table-toolbar-title{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.6px}
 .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
@@ -284,9 +284,9 @@ canvas{max-width:160px;max-height:160px;flex-shrink:0}
 .my-proj-meta{display:flex;align-items:center;gap:4px}
 .my-proj-empty{text-align:center;padding:40px;color:var(--text3)}
 .my-proj-empty-icon{font-size:36px;margin-bottom:10px}
-.mp-stat{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:10px 14px;text-align:center;min-width:80px;transition:transform .12s,box-shadow .12s;cursor:pointer}.mp-stat:hover{transform:scale(1.03);box-shadow:var(--sh)}
+.mp-stat{flex:1;border-radius:var(--rl);padding:10px 14px;text-align:center;min-width:80px;transition:transform .12s,box-shadow .12s;cursor:pointer;border:1px solid transparent}.mp-stat:hover{transform:scale(1.03);box-shadow:var(--sh)}
 .mp-stat-num{font-size:22px;font-weight:700;font-family:'IBM Plex Mono',monospace;line-height:1}
-.mp-stat-lbl{font-size:10px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-top:3px}
+.mp-stat-lbl{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.5px;margin-top:3px}
 
 
 @media (max-width:768px){
@@ -360,6 +360,33 @@ canvas{max-width:160px;max-height:160px;flex-shrink:0}
 
 tr.row-active{background:#EFF6FF !important;box-shadow:inset 3px 0 0 #1D4ED8;transition:background .2s}
 tr.row-active td{background:#EFF6FF !important}
+
+.modal-minimized{position:fixed;bottom:16px;right:16px;background:linear-gradient(135deg,#1E3250,#1D4ED8);color:#fff;border-radius:12px;padding:10px 16px;display:flex;align-items:center;gap:10px;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,.3);z-index:200;min-width:200px;animation:modalIn .2s ease;border:1px solid rgba(255,255,255,.15)}
+.modal-minimized-title{font-size:12px;font-weight:600;flex:1}
+.modal-minimized-sub{font-size:10px;color:rgba(255,255,255,.7)}
+.modal-minimized-icon{font-size:16px}
+.modal-minimized-restore{background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:11px;font-family:inherit}
+.modal-minimized-restore:hover{background:rgba(255,255,255,.25)}
+
+.table-wrap{overflow-x:auto;overflow-y:visible;scrollbar-gutter:stable}
+.table-wrap::-webkit-scrollbar{height:8px}
+.table-wrap::-webkit-scrollbar-track{background:#F1F5F9;border-radius:4px}
+.table-wrap::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:4px}
+.table-wrap::-webkit-scrollbar-thumb:hover{background:#94A3B8}
+.table-scroll-outer{
+  overflow-x:auto;
+  overflow-y:hidden;
+  position:sticky;
+  bottom:0;
+  background:var(--surface);
+}
+.table-scroll-outer::-webkit-scrollbar{height:8px}
+.table-scroll-outer::-webkit-scrollbar-track{background:#F1F5F9}
+.table-scroll-outer::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:4px}
+
+th{position:relative}
+.col-resizer{position:absolute;right:0;top:0;bottom:0;width:5px;cursor:col-resize;user-select:none;z-index:10}
+.col-resizer:hover,.col-resizer.resizing{background:var(--accent);opacity:.5}
 @media print{body{display:none!important}}
 
 /* SÜTUN FİLTRE */
@@ -425,7 +452,7 @@ function initFirebase() {
   db.collection('isler').onSnapshot(function(snapshot) {
     records = [];
     snapshot.forEach(function(d) { records.push(d.data()); });
-    if(window._appReady) renderAll();
+    if(window._appReady) { renderAll(); updateMyworksBadge(); }
   }, function(err) {
     console.warn('Firestore bağlantı hatası:', err);
     if(window._appReady) renderAll();
@@ -454,6 +481,8 @@ function initFirebase() {
   db.collection('projeler').orderBy('ad','asc').onSnapshot(function(snap){
     window._projeler = [];
     snap.forEach(function(d){ window._projeler.push(d.data()); });
+    if(activeTab==='tab-kutuphane') renderKutuphaneTab();
+    var nbK = document.getElementById('nb_kutuphane'); if(nbK) nbK.textContent = window._projeler.length;
   });
   window._fbDeleteYorum = function(id) {
     return db.collection('yorumlar').doc(id).delete();
@@ -522,36 +551,47 @@ loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js', f
   </div>
   <div class="sb-sec">
     <div class="sb-sec-lbl">Görünüm</div>
-    <button class="nav-item active" onclick="setView('all',this)">
+    <button class="nav-item active" id="nav-all" onclick="setView('all',this);toggleAkordeon()">
       <svg class="nav-svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="14" height="14" rx="2"/><line x1="1" y1="5" x2="15" y2="5"/><line x1="5" y1="1" x2="5" y2="15"/></svg>
       Tüm İşler <span class="nav-badge" id="nb_all">0</span>
+      <svg id="akordeon-arrow" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px;margin-left:auto;transition:transform .2s;flex-shrink:0"><polyline points="4,6 8,10 12,6"/></svg>
     </button>
-    <button class="nav-item" onclick="setView('devam',this)">
-      <svg class="nav-svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><polyline points="8,4 8,8 11,10"/></svg>
-      Devam Eden <span class="nav-badge" id="nb_devam">0</span>
+    <div id="akordeon-sub" style="max-height:0;overflow:hidden;transition:max-height .3s ease">
+      <button class="nav-item" id="nav-devam" onclick="setView('devam',this)" style="padding-left:28px">
+        <svg class="nav-svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><polyline points="8,4 8,8 11,10"/></svg>
+        Devam Eden <span class="nav-badge" id="nb_devam">0</span>
+      </button>
+      <button class="nav-item" id="nav-bekliyor" onclick="setView('bekliyor',this)" style="padding-left:28px">
+        <svg class="nav-svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><line x1="8" y1="5" x2="8" y2="8"/><line x1="8" y1="10" x2="8" y2="11"/></svg>
+        Bekliyor <span class="nav-badge" id="nb_bekliyor">0</span>
+      </button>
+      <button class="nav-item" id="nav-tamamlandi" onclick="setView('tamamlandi',this)" style="padding-left:28px">
+        <svg class="nav-svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><polyline points="5,8 7,10 11,6"/></svg>
+        Tamamlandı <span class="nav-badge" id="nb_tamamlandi">0</span>
+      </button>
+      <button class="nav-item" id="nav-revizyon" onclick="setView('revizyon',this)" style="padding-left:28px">
+        <svg class="nav-svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="2,8 2,3 14,3 14,8"/><polyline points="5,12 2,8 8,8 14,8 11,12"/></svg>
+        Revizyon <span class="nav-badge" id="nb_revizyon">0</span>
+      </button>
+      <button class="nav-item" id="nav-iptal" onclick="setView('iptal',this)" style="padding-left:28px">
+        <svg class="nav-svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><line x1="5.5" y1="5.5" x2="10.5" y2="10.5"/><line x1="10.5" y1="5.5" x2="5.5" y2="10.5"/></svg>
+        İptal <span class="nav-badge" id="nb_iptal">0</span>
+      </button>
+      <button class="nav-item" id="nav-gecikme" onclick="setView('gecikme',this)" style="padding-left:28px">
+        <svg class="nav-svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><line x1="8" y1="4" x2="8" y2="8"/><circle cx="8" cy="11" r=".8" fill="currentColor"/></svg>
+        Geciken İşler <span class="nav-badge" id="nb_gecikme">0</span>
+      </button>
+    </div>
+    <div class="sb-sec-lbl" style="margin-top:8px">Diğer</div>
+    <button class="nav-item" id="nav-kutuphane" onclick="switchTabById('tab-kutuphane')">
+      <svg class="nav-svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
+      Proje Kütüphanesi <span class="nav-badge" id="nb_kutuphane">0</span>
     </button>
-    <button class="nav-item" onclick="setView('bekliyor',this)">
-      <svg class="nav-svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><line x1="8" y1="5" x2="8" y2="8"/><line x1="8" y1="10" x2="8" y2="11"/></svg>
-      Bekliyor <span class="nav-badge" id="nb_bekliyor">0</span>
+    <button class="nav-item" id="nav-myworks" onclick="switchTabById('tab-myworks')">
+      <svg class="nav-svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="5" r="3"/><path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/></svg>
+      İşlerim <span class="nav-badge" id="nb_myworks">0</span>
     </button>
-    <button class="nav-item" onclick="setView('tamamlandi',this)">
-      <svg class="nav-svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><polyline points="5,8 7,10 11,6"/></svg>
-      Tamamlandı <span class="nav-badge" id="nb_tamam">0</span>
-    </button>
-    <button class="nav-item" onclick="setView('revizyon',this)">
-      <svg class="nav-svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="2,8 2,3 14,3 14,8"/><polyline points="5,12 2,8 8,8 14,8 11,12"/></svg>
-      Revizyon <span class="nav-badge" id="nb_rev">0</span>
-    </button>
-    <button class="nav-item" onclick="setView('iptal',this)">
-      <svg class="nav-svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><line x1="5.5" y1="5.5" x2="10.5" y2="10.5"/><line x1="10.5" y1="5.5" x2="5.5" y2="10.5"/></svg>
-      İptal <span class="nav-badge" id="nb_iptal">0</span>
-    </button>
-    <button class="nav-item" onclick="setView('gecikme',this)">
-      <svg class="nav-svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><line x1="8" y1="4" x2="8" y2="8"/><circle cx="8" cy="11" r=".8" fill="currentColor"/></svg>
-      Geciken İşler <span class="nav-badge" id="nb_gecikme">0</span>
-    </button>
-    <div class="sb-sec-lbl" style="margin-top:8px">Arşiv</div>
-    <button class="nav-item" onclick="switchTabById('tab-archive')">
+    <button class="nav-item" id="nav-archive" onclick="switchTabById('tab-archive')">
       <svg class="nav-svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3" width="14" height="3" rx="1"/><path d="M2 6v7a1 1 0 001 1h10a1 1 0 001-1V6"/><line x1="6" y1="9" x2="10" y2="9"/></svg>
       Arşiv <span class="nav-badge" id="nb_archive">0</span>
     </button>
@@ -585,7 +625,6 @@ loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js', f
             <div class="profile-menu-dept" id="pmDept">—</div>
           </div>
           <button class="profile-menu-item" onclick="switchTabById('tab-myworks');toggleProfileMenu()">📋 İşlerim</button>
-          <button class="profile-menu-item" onclick="openKutuphane();toggleProfileMenu()">📚 Proje Kütüphanesi</button>
           <button class="profile-menu-item" onclick="openPwdModal();toggleProfileMenu()">🔑 Şifre Değiştir</button>
           <button class="profile-menu-item danger" onclick="logout()">↩ Oturumu Kapat</button>
         </div>
@@ -615,12 +654,7 @@ loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js', f
     <button class="tab-btn" onclick="switchTab('tab-charts',this)">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="1,12 5,7 8,9 12,4 15,6"/><line x1="1" y1="14" x2="15" y2="14"/></svg>Raporlar &amp; Grafikler
     </button>
-    <button class="tab-btn" id="tab-btn-myworks" onclick="switchTab('tab-myworks',this)">
-      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="5" r="3"/><path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/></svg>İşlerim
-    </button>
-    <button class="tab-btn" id="tab-btn-archive" onclick="switchTab('tab-archive',this)">
-      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3" width="14" height="3" rx="1"/><path d="M2 6v7a1 1 0 001 1h10a1 1 0 001-1V6"/><line x1="6" y1="9" x2="10" y2="9"/></svg>Arşiv
-    </button>
+
   </div>
 
   <div class="filter-strip" id="filterStrip"></div>
@@ -721,8 +755,27 @@ loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js', f
         </button>
       </div>
     </div>
-    <div id="myworksStats" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px"></div>
+    <div id="myworksStats" style="display:flex;gap:8px;margin-bottom:14px"></div>
     <div id="myworksList"></div>
+  </div>
+
+  <!-- TAB: PROJE KÜTÜPHANESİ -->
+  <div class="tab-content" id="tab-kutuphane">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div>
+        <div style="font-size:15px;font-weight:600;color:var(--text)">📚 Proje Kütüphanesi</div>
+        <div style="font-size:11px;color:var(--text3)" id="kutuphaneSub">Proje adlarını yönetin</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="kutuphaneyeniInput2" placeholder="Yeni proje adı ekle..."
+          style="padding:8px 12px;border:1px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;width:240px"
+          onkeydown="if(event.key==='Enter')addProjeToKutuphane2()">
+        <button class="btn btn-primary" onclick="addProjeToKutuphane2()">+ Ekle</button>
+      </div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;box-shadow:var(--sh)">
+      <div id="kutuphaneTabList" style="padding:8px 0"></div>
+    </div>
   </div>
 
   <!-- TAB: ARŞİV -->
@@ -743,20 +796,24 @@ loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js', f
         </button>
       </div>
     </div>
+    <div id="archiveStats" style="display:flex;gap:24px;margin-bottom:14px;padding:0 4px"></div>
     <div id="archiveList"></div>
   </div>
 
 </div>
 
 <!-- MODAL -->
-<div class="overlay" id="modalOverlay" onclick="bgClose(event,'modalOverlay')">
-  <div class="modal">
+<div class="overlay" id="modalOverlay" onclick="minimizeModal()">
+  <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-head">
       <div class="modal-head-l">
         <div class="modal-icon">📋</div>
         <div><div class="modal-title" id="modalTitle">Yeni İş Ekle</div><div class="modal-sub">Tüm zorunlu alanları doldurun</div></div>
       </div>
-      <button class="modal-x" onclick="closeModal()">×</button>
+      <div style="display:flex;align-items:center;gap:6px">
+        <button onclick="minimizeModal()" style="background:rgba(0,0,0,.08);border:none;cursor:pointer;color:var(--text2);padding:3px 10px;border-radius:6px;font-size:16px;line-height:1;font-weight:700" title="Küçült">—</button>
+        <button class="modal-x" onclick="event.stopPropagation();closeModal()">×</button>
+      </div>
     </div>
     <div class="modal-body">
       <div class="form-sec">
@@ -817,9 +874,9 @@ loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js', f
       <div class="form-sec">
         <div class="form-sec-title">Tarihler &amp; Durum</div>
         <div class="form-grid">
-          <div class="form-group"><label>Geliş Tarihi <span class="req">*</span></label><input type="date" id="f_gelisTarihi" onchange="autoSetDurum();checkFormValid()"></div>
-          <div class="form-group"><label>İşe Başlangıç Tarihi</label><input type="date" id="f_baslangicTarihi" onchange="autoSetDurum()"></div>
-          <div class="form-group"><label>Bitiş Tarihi</label><input type="date" id="f_bitisTarihi" onchange="autoSetDurum()"></div>
+          <div class="form-group"><label>Geliş Tarihi <span class="req">*</span></label><input type="date" id="f_gelisTarihi" onchange="autoSetDurum();validateTarihler();checkFormValid()"></div>
+          <div class="form-group"><label>İşe Başlangıç Tarihi</label><input type="date" id="f_baslangicTarihi" onchange="autoSetDurum();validateTarihler()"><div id="err_baslangic" style="color:#DC2626;font-size:11px;margin-top:3px;display:none"></div></div>
+          <div class="form-group"><label>Bitiş Tarihi</label><input type="date" id="f_bitisTarihi" onchange="autoSetDurum();validateTarihler()"><div id="err_bitis" style="color:#DC2626;font-size:11px;margin-top:3px;display:none"></div></div>
           <div class="form-group">
             <label>Durum</label>
             <select id="f_durum" onchange="onDurumManualChange()">
@@ -857,7 +914,7 @@ loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js', f
     <div class="modal-foot">
       <span class="modal-foot-l"><span class="req">*</span> Zorunlu alan</span>
       <div class="modal-foot-r">
-        <button class="btn" onclick="closeModal()">İptal</button>
+        <button class="btn" onclick="event.stopPropagation();closeModal()">İptal</button>
         <button class="btn btn-primary" id="saveBtn" onclick="saveRecord()" disabled style="opacity:.4;cursor:not-allowed">
           <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><polyline points="2,8 6,12 14,4"/></svg>Kaydet
         </button>
@@ -871,6 +928,14 @@ loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js', f
   <div class="detail-panel" id="detailPanel"></div>
 </div>
 <div class="toast" id="toast"></div>
+<div class="modal-minimized" id="modalMinimized" style="display:none" onclick="restoreModal()">
+  <div class="modal-minimized-icon">📋</div>
+  <div>
+    <div class="modal-minimized-title">Yeni İş Ekle</div>
+    <div class="modal-minimized-sub">Devam etmek için tıklayın</div>
+  </div>
+  <button class="modal-minimized-restore" onclick="event.stopPropagation();closeModal()">✕</button>
+</div>
 
 <!-- PROJE KÜTÜPHANESİ MODALİ -->
 <div class="overlay" id="kutuphaneOverlay" onclick="if(event.target===this)closeKutuphane()">
@@ -1090,6 +1155,16 @@ function getFiltered(){
   return data;
 }
 
+
+function updateMyworksBadge(){
+  var nbMy = document.getElementById('nb_myworks');
+  if(!nbMy) return;
+  if(!currentUser){ nbMy.textContent = ''; return; }
+  nbMy.textContent = records.filter(function(r){
+    return (r.sorumlu||'').trim() === currentUser.ad.trim();
+  }).length;
+}
+
 function renderAll(){
   renderStats(); renderFilters(); renderTable();
   if(activeTab==='tab-charts') renderCharts();
@@ -1099,6 +1174,8 @@ function renderAll(){
   var archCount = records.filter(function(r){return r.durum==='Tamamlandı'||r.durum==='İptal';}).length;
   var nbArc = document.getElementById('nb_archive');
   if(nbArc) nbArc.textContent = archCount;
+  // İşlerim sayacını güncelle
+  updateMyworksBadge();
 }
 
 function renderStats(){
@@ -1451,6 +1528,47 @@ function autoSetDurum(){
 }
 
 
+
+function validateTarihler() {
+  var gelis     = document.getElementById('f_gelisTarihi').value;
+  var baslangic = document.getElementById('f_baslangicTarihi').value;
+  var bitis     = document.getElementById('f_bitisTarihi').value;
+  var errB = document.getElementById('err_baslangic');
+  var errBt = document.getElementById('err_bitis');
+  var ok = true;
+
+  // Başlangıç geliş tarihinden önce olamaz
+  if(errB) {
+    if(gelis && baslangic && baslangic < gelis) {
+      errB.textContent = '⚠ Başlangıç tarihi geliş tarihinden önce olamaz!';
+      errB.style.display = 'block';
+      document.getElementById('f_baslangicTarihi').style.borderColor = '#DC2626';
+      ok = false;
+    } else {
+      errB.style.display = 'none';
+      document.getElementById('f_baslangicTarihi').style.borderColor = '';
+    }
+  }
+
+  // Bitiş tarihi geliş ve başlangıçtan önce olamaz
+  if(errBt) {
+    var bitisHata = '';
+    if(gelis && bitis && bitis < gelis) bitisHata = '⚠ Bitiş tarihi geliş tarihinden önce olamaz!';
+    else if(baslangic && bitis && bitis < baslangic) bitisHata = '⚠ Bitiş tarihi başlangıç tarihinden önce olamaz!';
+
+    if(bitisHata) {
+      errBt.textContent = bitisHata;
+      errBt.style.display = 'block';
+      document.getElementById('f_bitisTarihi').style.borderColor = '#DC2626';
+      ok = false;
+    } else {
+      errBt.style.display = 'none';
+      document.getElementById('f_bitisTarihi').style.borderColor = '';
+    }
+  }
+  return ok;
+}
+
 function checkFormValid(){
   var btn = document.getElementById('saveBtn');
   if(!btn) return;
@@ -1602,8 +1720,20 @@ function openModal(id){
   });
   setTimeout(checkFormValid, 50);
 }
+
+function minimizeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  document.getElementById('modalMinimized').style.display = 'flex';
+}
+
+function restoreModal() {
+  document.getElementById('modalMinimized').style.display = 'none';
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
 function closeModal(){
   document.getElementById('modalOverlay').classList.remove('open');
+  document.getElementById('modalMinimized').style.display = 'none';
   // Departman ve sorumlu disabled'ı sıfırla
   document.getElementById('f_departman').disabled = false;
   document.getElementById('f_sorumlu').disabled = false;
@@ -1724,16 +1854,44 @@ function closeDetail(){
   document.querySelectorAll('tr.row-active').forEach(function(tr){ tr.classList.remove('row-active'); });
 }
 
+
+var _akordeonOpen = false;
+function toggleAkordeon(forceOpen) {
+  var sub = document.getElementById('akordeon-sub');
+  var arrow = document.getElementById('akordeon-arrow');
+  if(!sub) return;
+  if(forceOpen !== undefined) _akordeonOpen = !forceOpen;
+  _akordeonOpen = !_akordeonOpen;
+  sub.style.maxHeight = _akordeonOpen ? sub.scrollHeight + 300 + 'px' : '0';
+  if(arrow) arrow.style.transform = _akordeonOpen ? 'rotate(180deg)' : '';
+}
 function setView(view,el){
   currentView=view;deptFilter=null;
   document.querySelectorAll('.nav-item').forEach(function(i){i.classList.remove('active');});
   el.classList.add('active');
+  // Alt sekme seçilince akordeon açık kalsın, nav-all de aktif görünsün
+  if(view!=='all'){
+    var sub = document.getElementById('akordeon-sub');
+    var arrow = document.getElementById('akordeon-arrow');
+    if(sub) { _akordeonOpen=true; sub.style.maxHeight = sub.scrollHeight+300+'px'; }
+    if(arrow) arrow.style.transform = 'rotate(180deg)';
+    document.getElementById('nav-all').classList.add('active');
+  }
   var titles={all:'Tüm İşler',devam:'Devam Eden İşler',bekliyor:'Bekleyen İşler',tamamlandi:'Tamamlanan İşler',revizyon:'Revizyon İşleri',iptal:'İptal Edilen İşler',gecikme:'Geciken İşler'};
   var subs={all:'Genel Liste',devam:'Aktif işler',bekliyor:'Onay/başlangıç bekleyenler',tamamlandi:'Kapatılmış işler',revizyon:'Revizyon gerektiren işler',iptal:'Sonlandırılmış işler',gecikme:'Bitiş tarihi geçmiş işler'};
   document.getElementById('pageTitle').textContent=titles[view]||view;
   document.getElementById('breadSub').textContent=subs[view]||'';
   document.getElementById('tableToolbarTitle').textContent=titles[view]||view;
-  renderFilters();renderTable();
+  // İş listesi, raporlar ve işlerim için filtrele — arşiv ve işlerim için iş listesine geç
+  if(activeTab==='tab-archive' || activeTab==='tab-myworks'){
+    // Bu sekmeler filtreyi desteklemiyor — iş listesine geç
+    var tabBtn = document.getElementById('tab-btn-list');
+    switchTab('tab-list', tabBtn||null);
+  } else if(activeTab==='tab-list') {
+    renderFilters(); renderTable();
+  } else if(activeTab==='tab-charts') {
+    renderCharts();
+  }
 }
 function setViewId(view){
   var navs=document.querySelectorAll('.nav-item');
@@ -1744,24 +1902,32 @@ function switchTab(tabId,el){
   activeTab=tabId;
   document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
   if(el) el.classList.add('active');
+  var _fs = document.getElementById('filterStrip');
   document.querySelectorAll('.tab-content').forEach(function(c){c.classList.remove('active');});
   var tabEl = document.getElementById(tabId);
   if(tabEl) tabEl.classList.add('active');
-  if(tabId==='tab-charts') renderCharts();
-  if(tabId==='tab-myworks'){
+  if(tabId==='tab-charts'){
+    if(_fs) _fs.style.display='';
+    renderCharts();
+  } else if(tabId==='tab-myworks'){
+    if(_fs) _fs.style.display='none';
     renderMyWorks();
-    document.getElementById('filterStrip').style.display='none';
   } else if(tabId==='tab-archive'){
+    if(_fs) _fs.style.display='none';
     renderArchive();
-    var fs = document.getElementById('filterStrip');
-    if(fs) fs.style.display='none';
+  } else if(tabId==='tab-kutuphane'){
+    if(_fs) _fs.style.display='none';
+    renderKutuphaneTab();
   } else {
-    document.getElementById('filterStrip').style.display='';
+    if(_fs) _fs.style.display='';
+    renderFilters();
+    renderTable();
   }
 }
 function switchTabById(tabId){
+  // tab-btn olmasa bile çalış
   var btn = document.getElementById('tab-btn-'+tabId.replace('tab-',''));
-  if(btn) switchTab(tabId, btn);
+  switchTab(tabId, btn||null);
 }
 function sortBy(col){sortDir=sortCol===col?sortDir*-1:1;sortCol=col;renderTable();}
 
@@ -2758,7 +2924,8 @@ function doLogin() {
       updateProfileUI();
       updateNotifUI();
       if(btn) { btn.disabled=false; btn.textContent='Giriş Yap'; }
-      showToast('Hoş geldiniz, '+user.ad.split(' ')[0]+'! 👋');
+      updateMyworksBadge();
+    showToast('Hoş geldiniz, '+user.ad.split(' ')[0]+'! 👋');
       return;
     }
   }
@@ -3636,16 +3803,50 @@ function printMyWorks(){
 
 
 // ── ARŞİV ──────────────────────────────────────
+
+var _archiveFiltre = null;
+function filterArchive(filtre) {
+  _archiveFiltre = (_archiveFiltre === filtre) ? null : filtre;
+  renderArchive();
+}
 function renderArchive(){
   var archivedRecs = records.filter(function(r){
     return r.durum==='Tamamlandı' || r.durum==='İptal';
   });
+  if(_archiveFiltre) archivedRecs = archivedRecs.filter(function(r){ return r.durum===_archiveFiltre; });
   var q = (document.getElementById('archiveSearch')||{}).value||'';
   if(q) archivedRecs = archivedRecs.filter(function(r){
     return Object.values(r).some(function(v){return String(v).toLowerCase().indexOf(q.toLowerCase())>=0;});
   });
-  document.getElementById('nb_archive').textContent = records.filter(function(r){return r.durum==='Tamamlandı'||r.durum==='İptal';}).length;
+  var totalArc = records.filter(function(r){return r.durum==='Tamamlandı'||r.durum==='İptal';}).length;
+  var tamamlananArc = records.filter(function(r){return r.durum==='Tamamlandı';}).length;
+  var iptalArc = records.filter(function(r){return r.durum==='İptal';}).length;
+  document.getElementById('nb_archive').textContent = totalArc;
   document.getElementById('archiveSubtitle').textContent = archivedRecs.length + ' kayıt';
+
+  // Özet kartlar
+  var arcStats = document.getElementById('archiveStats');
+  if(arcStats){
+    var bgT   = 'background:linear-gradient(135deg,#EFF6FF,#DBEAFE)';
+    var bgTam = 'background:linear-gradient(135deg,#ECFDF5,#D1FAE5)';
+    var bgIp  = 'background:linear-gradient(135deg,#FEF2F2,#FEE2E2)';
+    var selT   = _archiveFiltre===null          ? 'box-shadow:0 0 0 2px #1D4ED8;' : '';
+    var selTam = _archiveFiltre==='Tamamlandı'  ? 'box-shadow:0 0 0 2px #059669;' : '';
+    var selIp  = _archiveFiltre==='İptal'       ? 'box-shadow:0 0 0 2px #DC2626;' : '';
+    arcStats.innerHTML =
+      '<div class="mw-stat-card arc-stat" data-f="" style="border-top-color:#1D4ED8;cursor:pointer;'+bgT+selT+'" >'+
+        '<div class="mw-stat-num" style="color:#1D4ED8">'+totalArc+'</div>'+
+        '<div class="mw-stat-lbl">TOPLAM</div>'+
+      '</div>'+
+      '<div class="mw-stat-card arc-stat" data-f="Tamamlandı" style="border-top-color:#059669;cursor:pointer;'+bgTam+'" >'+
+        '<div class="mw-stat-num" style="color:#059669">'+tamamlananArc+'</div>'+
+        '<div class="mw-stat-lbl">TAMAMLANDI</div>'+
+      '</div>'+
+      '<div class="mw-stat-card arc-stat" data-f="İptal" style="border-top-color:#DC2626;cursor:pointer;'+bgIp+'" >'+
+        '<div class="mw-stat-num" style="color:#DC2626">'+iptalArc+'</div>'+
+        '<div class="mw-stat-lbl">\u0130PTAL</div>'+
+      '</div>';
+  }
 
   var SC={'Tamamlandı':['#DBEAFE','#1E40AF'],'İptal':['#FEE2E2','#991B1B']};
 
@@ -3688,6 +3889,14 @@ function renderArchive(){
   });
   html+='</tbody></table></div></div>';
   document.getElementById('archiveList').innerHTML=html;
+  // Stat kart tıklama
+  var arcSt = document.getElementById('archiveStats');
+  if(arcSt) arcSt.onclick = function(e){
+    var card = e.target.closest('.arc-stat');
+    if(!card) return;
+    var f = card.getAttribute('data-f');
+    filterArchive(f||null);
+  };
   document.getElementById('archiveList').onclick=function(e){
     var row=e.target.closest('tr[id^="arc_"]');
     if(!row) return;
@@ -4132,6 +4341,76 @@ function makeDraggable(modalEl, handleEl) {
   }
 }
 
+
+function renderKutuphaneTab(){
+  var list = document.getElementById('kutuphaneTabList');
+  if(!list) return;
+  var projeler = window._projeler||[];
+  var sub = document.getElementById('kutuphaneSub');
+  if(sub) sub.textContent = projeler.length + ' proje';
+  if(!projeler.length){
+    list.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3)">Henüz proje yok</div>';
+    return;
+  }
+  list.innerHTML = projeler.map(function(p,i){
+    return '<div class="kutuphane-item" id="kit_'+p.id+'">'+
+      '<span class="kutuphane-item-name" style="font-size:13px">'+esc(p.ad)+'</span>'+
+      '<div style="display:flex;gap:6px">'+
+        '<button class="btn" style="font-size:11px;padding:4px 12px" data-edit="'+p.id+'">✏ Düzenle</button>'+
+        '<button class="btn" style="font-size:11px;padding:4px 12px;color:var(--red);border-color:#FECACA" data-del="'+p.id+'">🗑 Sil</button>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+  list.onclick = function(e){
+    var editBtn = e.target.closest('[data-edit]');
+    var delBtn  = e.target.closest('[data-del]');
+    if(editBtn) editProjeTab(editBtn.getAttribute('data-edit'));
+    if(delBtn)  deleteProje(delBtn.getAttribute('data-del'));
+  };
+}
+
+function editProjeTab(id){
+  var item = document.getElementById('kit_'+id);
+  if(!item) return;
+  var p = (window._projeler||[]).find(function(x){ return x.id===id; });
+  if(!p) return;
+  item.innerHTML =
+    '<input class="kutuphane-edit-input" id="eit_'+id+'" value="'+esc(p.ad)+'" style="flex:1;padding:6px 10px;border:1px solid var(--accent);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none">'+
+    '<div style="display:flex;gap:6px">'+
+      '<button class="btn btn-primary" style="font-size:11px;padding:4px 12px" data-save="'+id+'">✓ Kaydet</button>'+
+      '<button class="btn" style="font-size:11px;padding:4px 12px" onclick="renderKutuphaneTab()">İptal</button>'+
+    '</div>';
+  var saveBtn = item.querySelector('[data-save]');
+  saveBtn.onclick = function(){ saveProjeTab(id); };
+  setTimeout(function(){ var el=document.getElementById('eit_'+id); if(el){el.focus();el.select();} }, 50);
+}
+
+function saveProjeTab(id){
+  var input = document.getElementById('eit_'+id);
+  if(!input) return;
+  var ad = input.value.trim();
+  if(!ad){ showToast('⚠ Proje adı boş olamaz'); return; }
+  if(!window._fbUpdateProje){ showToast('⚠ Firebase bağlı değil'); return; }
+  window._fbUpdateProje(id, ad).then(function(){
+    showToast('Proje güncellendi ✓');
+    setTimeout(renderKutuphaneTab, 300);
+  });
+}
+
+function addProjeToKutuphane2(){
+  var input = document.getElementById('kutuphaneyeniInput2');
+  var ad = (input.value||'').trim();
+  if(!ad){ showToast('⚠ Proje adı boş olamaz'); return; }
+  var existing = (window._projeler||[]).find(function(p){ return p.ad.toLowerCase()===ad.toLowerCase(); });
+  if(existing){ showToast('⚠ Bu proje zaten mevcut'); return; }
+  if(!window._fbAddProje){ showToast('⚠ Firebase bağlı değil'); return; }
+  window._fbAddProje({id:genId(), ad:ad, zaman:Date.now()}).then(function(){
+    input.value='';
+    showToast('Proje eklendi ✓');
+    setTimeout(renderKutuphaneTab, 300);
+  });
+}
+
 function showToast(msg){
   var t=document.getElementById('toast');t.textContent=msg;t.style.display='block';
   clearTimeout(t._t);t._t=setTimeout(function(){t.style.display='none';},2800);
@@ -4171,6 +4450,135 @@ document.getElementById('tableBody').innerHTML =
   '<div style="font-size:13px;font-weight:500">Veriler yükleniyor...</div>'+
   '</td></tr>';
 renderAll();
+
+// ── SABİT YATAY SCROLLBAR ──────────────────────────
+(function(){
+  var ghost = document.createElement('div');
+  ghost.id = 'stickyScrollBar';
+  ghost.style.cssText = 'position:fixed;bottom:0;left:0;right:0;height:12px;overflow-x:auto;overflow-y:hidden;z-index:50;background:#F8FAFC;border-top:1px solid #E2E8F0;display:none';
+  var inner = document.createElement('div');
+  inner.id = 'stickyScrollInner';
+  inner.style.height = '1px';
+  ghost.appendChild(inner);
+  document.body.appendChild(ghost);
+
+  function syncScroll(){
+    var tw = document.querySelector('.table-wrap');
+    if(!tw) return;
+    var rect = tw.getBoundingClientRect();
+    var tableVisible = rect.top < window.innerHeight && rect.bottom > 0;
+    var needsScroll = tw.scrollWidth > tw.clientWidth;
+    
+    if(tableVisible && needsScroll){
+      ghost.style.display = 'block';
+      ghost.style.left = rect.left + 'px';
+      ghost.style.right = (window.innerWidth - rect.right) + 'px';
+      inner.style.width = tw.scrollWidth + 'px';
+      ghost.style.bottom = '0px';
+    } else {
+      ghost.style.display = 'none';
+    }
+  }
+
+  // Scrollbar senkronizasyonu
+  ghost.addEventListener('scroll', function(){
+    var tw = document.querySelector('.table-wrap');
+    if(tw) tw.scrollLeft = ghost.scrollLeft;
+  });
+
+  function syncGhostFromTable(){
+    var tw = document.querySelector('.table-wrap');
+    if(tw) ghost.scrollLeft = tw.scrollLeft;
+  }
+
+  window.addEventListener('scroll', function(){ syncScroll(); syncGhostFromTable(); });
+  window.addEventListener('resize', syncScroll);
+  
+  // renderTable sonrası güncelle
+  var origRenderTable = window.renderTable;
+  document.addEventListener('DOMContentLoaded', function(){
+    setInterval(function(){
+      syncScroll();
+      var tw = document.querySelector('.table-wrap');
+      if(tw){
+        tw.onscroll = syncGhostFromTable;
+      }
+    }, 500);
+  });
+})();
+
+
+// ── SÜTUN GENİŞLETME ──────────────────────────
+(function(){
+  var resizing = null, startX = 0, startW = 0;
+
+  function initResizers(){
+    var ths = document.querySelectorAll('thead th');
+    ths.forEach(function(th){
+      if(th.querySelector('.col-resizer')) return;
+      var r = document.createElement('div');
+      r.className = 'col-resizer';
+      th.appendChild(r);
+      r.addEventListener('mousedown', function(e){
+        e.stopPropagation();
+        e.preventDefault();
+        resizing = th;
+        startX = e.clientX;
+        startW = th.offsetWidth;
+        r.classList.add('resizing');
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+      });
+
+      // Çift tıklayınca otomatik genişlik
+      r.addEventListener('dblclick', function(e){
+        e.stopPropagation();
+        var idx = Array.from(th.parentElement.children).indexOf(th);
+        var table = th.closest('table');
+        var maxW = th.querySelector('.th-label') ?
+          th.querySelector('.th-label').scrollWidth + 32 :
+          th.scrollWidth;
+        // Tüm td'leri kontrol et
+        var rows = table.querySelectorAll('tbody tr');
+        rows.forEach(function(row){
+          var td = row.cells[idx];
+          if(!td) return;
+          // Geçici geniş yap, scrollWidth ölç
+          var prev = td.style.whiteSpace;
+          td.style.whiteSpace = 'nowrap';
+          if(td.scrollWidth + 16 > maxW) maxW = td.scrollWidth + 16;
+          td.style.whiteSpace = prev;
+        });
+        maxW = Math.max(40, Math.min(400, maxW));
+        th.style.width = maxW + 'px';
+        th.style.minWidth = maxW + 'px';
+      });
+    });
+  }
+
+  function onMouseMove(e){
+    if(!resizing) return;
+    var w = Math.max(40, startW + (e.clientX - startX));
+    resizing.style.width = w + 'px';
+    resizing.style.minWidth = w + 'px';
+  }
+
+  function onMouseUp(){
+    if(resizing){
+      resizing.querySelector('.col-resizer').classList.remove('resizing');
+      resizing = null;
+    }
+    document.removeEventListener('mousemove', onMouseMove);
+    document.removeEventListener('mouseup', onMouseUp);
+  }
+
+  // renderTable sonrası yeniden init et
+  setInterval(function(){
+    var ths = document.querySelectorAll('thead th');
+    if(ths.length > 0) initResizers();
+  }, 1000);
+})();
+
 </script>
 </body>
 </html>
