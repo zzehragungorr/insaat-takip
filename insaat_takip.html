@@ -5072,6 +5072,7 @@ function saveIsEmri(){
     departman:document.getElementById('ie_departman').value,
     oncelik:document.getElementById('ie_oncelik').value,
     sorumlu:document.getElementById('ie_sorumlu').value,
+    sorumluId:(KULLANICILAR.find(function(u){return u.ad===document.getElementById('ie_sorumlu').value;})||{}).id||'',
     onaylayan:document.getElementById('ie_onaylayan').value,
     isTanimi:(function(){
       var v = document.getElementById('ie_isTanimi').value;
@@ -5180,14 +5181,18 @@ function openIePanel(rid){
 
   // Aksiyon butonları
   var actions='';
-  // Sorumlu kontrolü — ad, id veya username ile eşleş
+  // Sorumlu kontrolü — ID bazlı
   var canAct = false;
-  if(currentUser && r.isEmriVerenId !== currentUser.id){
-    var sorumluUser = KULLANICILAR.find(function(u){
-      return u.ad === (r.sorumlu||'').trim();
-    });
-    canAct = sorumluUser ? sorumluUser.id === currentUser.id : 
-             (r.sorumlu||'').trim() === currentUser.ad.trim();
+  if(currentUser && currentUser.id !== r.isEmriVerenId){
+    if(r.sorumluId && r.sorumluId === currentUser.id){
+      canAct = true;
+    } else {
+      // Eski kayıtlar için ad karşılaştırması
+      var sorumluKullanici = KULLANICILAR.find(function(u){
+        return u.ad === (r.sorumlu||'').trim();
+      });
+      canAct = sorumluKullanici ? sorumluKullanici.id === currentUser.id : false;
+    }
   }
 
   var isVeren = currentUser && r.isEmriVerenId===currentUser.id;
