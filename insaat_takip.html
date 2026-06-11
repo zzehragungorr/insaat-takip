@@ -387,6 +387,41 @@ tr.row-active td{background:#EFF6FF !important}
 th{position:relative}
 .col-resizer{position:absolute;right:0;top:0;bottom:0;width:5px;cursor:col-resize;user-select:none;z-index:10}
 .col-resizer:hover,.col-resizer.resizing{background:var(--accent);opacity:.5}
+
+/* WIZARD FORM */
+.wizard-steps{display:flex;align-items:center;padding:14px 20px;border-bottom:1px solid var(--border);background:var(--surface2);gap:0}
+.wizard-step{display:flex;align-items:center;gap:6px;flex:1;cursor:default}
+.wizard-step-num{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;transition:.2s}
+.wizard-step-num.done{background:#059669;color:#fff}
+.wizard-step-num.active{background:var(--accent);color:#fff}
+.wizard-step-num.pending{background:var(--surface3);color:var(--text3)}
+.wizard-step-label{font-size:11px;font-weight:500;transition:.2s}
+.wizard-step-label.active{color:var(--accent);font-weight:600}
+.wizard-step-label.done{color:#059669}
+.wizard-step-label.pending{color:var(--text3)}
+.wizard-sep{flex:1;height:2px;background:var(--border);margin:0 6px;border-radius:2px;transition:.2s}
+.wizard-sep.done{background:#059669}
+.wizard-pane{display:none;animation:fadeIn .15s ease}
+.wizard-pane.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+
+/* İŞ EMRİ */
+tr.is-emri-row td{background:#F5F3FF !important}
+tr.is-emri-row:hover td{background:#EDE9FE !important}
+.isemri-badge{background:#7C3AED;color:#fff;font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;margin-left:4px;vertical-align:middle}
+
+
+/* ── İŞ EMRİ ── */
+tr.is-emri-row > td { background:#F5F3FF !important; border-left: 3px solid #7C3AED; }
+tr.is-emri-row:hover > td { background:#EDE9FE !important; }
+.ie-badge { display:inline-flex;align-items:center;gap:3px;background:#7C3AED;color:#fff;font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;margin-left:4px;vertical-align:middle }
+.ie-status-badge { display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;padding:3px 10px;border-radius:10px }
+.ie-panel { position:fixed;right:0;top:0;bottom:0;width:420px;background:var(--surface);border-left:1px solid var(--border);box-shadow:-8px 0 32px rgba(0,0,0,.15);z-index:150;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .25s ease }
+.ie-panel.open { transform:translateX(0) }
+.ie-panel-head { padding:16px 20px;border-bottom:1px solid var(--border);background:linear-gradient(135deg,#4C1D95,#7C3AED);display:flex;align-items:center;justify-content:space-between;flex-shrink:0 }
+.ie-action-btn { padding:8px 18px;border-radius:8px;font-size:12px;font-weight:600;border:none;cursor:pointer;font-family:inherit;transition:.15s }
+
 @media print{body{display:none!important}}
 
 /* SÜTUN FİLTRE */
@@ -541,6 +576,8 @@ loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js', f
   });
 });
 </script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>emailjs.init("LVbyZhw2vtQbqNfbO");</script>
 </head>
 <body>
 <aside class="sidebar">
@@ -583,6 +620,10 @@ loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js', f
       </button>
     </div>
     <div class="sb-sec-lbl" style="margin-top:8px">Diğer</div>
+    <button class="nav-item" id="nav-aylik-rapor" onclick="openAylikRapor()" style="display:none">
+      <svg class="nav-svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="1" width="12" height="14" rx="1.5"/><line x1="5" y1="5" x2="11" y2="5"/><line x1="5" y1="8" x2="11" y2="8"/><line x1="5" y1="11" x2="9" y2="11"/></svg>
+      Aylık Rapor
+    </button>
     <button class="nav-item" id="nav-kutuphane" onclick="switchTabById('tab-kutuphane')">
       <svg class="nav-svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
       Proje Kütüphanesi <span class="nav-badge" id="nb_kutuphane">0</span>
@@ -638,6 +679,10 @@ loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js', f
       </button>
       <button class="btn" onclick="exportExcel()" style="color:#065F46;border-color:#6EE7B7;background:#ECFDF5;font-weight:600">
         <svg viewBox="0 0 16 16" fill="none" stroke="#065F46" stroke-width="1.8"><rect x="2" y="1" width="12" height="14" rx="1.5"/><line x1="5" y1="5" x2="11" y2="5"/><line x1="5" y1="8" x2="11" y2="8"/><line x1="5" y1="11" x2="8" y2="11"/></svg>Excel İndir
+      </button>
+      <button class="btn" style="background:linear-gradient(135deg,#4C1D95,#7C3AED);color:#fff;border:none;font-weight:600" onclick="openIsEmriModal()">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="width:13px;height:13px"><rect x="2" y="2" width="12" height="3" rx="1"/><line x1="2" y1="8" x2="10" y2="8"/><line x1="2" y1="11" x2="8" y2="11"/><polyline points="11,10 13,12 15,9"/></svg>
+        İş Emri Oluştur
       </button>
       <button class="btn btn-primary" onclick="openModal()">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/></svg>Yeni İş Ekle
@@ -863,7 +908,13 @@ loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js', f
           </div>
           <div class="form-group full">
             <label>İş Tanımı <span class="req">*</span></label>
-            <select id="f_isTanimi" disabled onchange="checkFormValid()"><option value="">— Önce departman seçin —</option></select>
+            <select id="f_isTanimi" disabled onchange="onIsTanimiChange();checkFormValid()"><option value="">— Önce departman seçin —</option></select>
+            <div id="isTanimiManuelWrap" style="display:none;margin-top:6px">
+              <input type="text" id="f_isTanimiManuel" placeholder="Yeni iş tanımı girin..."
+                style="width:100%;padding:8px 12px;border:1px solid var(--accent);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none"
+                oninput="checkFormValid()">
+              <div style="font-size:10.5px;color:var(--accent);margin-top:4px">Bu iş tanımı listeye kalıcı olarak eklenecek</div>
+            </div>
           </div>
           <div class="form-group full">
             <label>Dosya / Döküman Linki</label>
@@ -928,6 +979,278 @@ loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js', f
   <div class="detail-panel" id="detailPanel"></div>
 </div>
 <div class="toast" id="toast"></div>
+
+<!-- İŞ EMRİ MODAL -->
+<div class="overlay" id="isEmriOverlay" onclick="minimizeIsEmri()">
+  <div class="modal" id="isEmriModal" onclick="event.stopPropagation()" style="width:700px;max-height:90vh;overflow-y:auto">
+    <div class="modal-head" id="isEmriHead" style="cursor:move;background:linear-gradient(135deg,#4C1D95,#7C3AED)">
+      <div class="modal-head-l">
+        <div style="width:32px;height:32px;background:rgba(255,255,255,.15);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="1.5" style="width:16px;height:16px"><rect x="2" y="2" width="12" height="3" rx="1"/><line x1="2" y1="8" x2="10" y2="8"/><line x1="2" y1="11" x2="8" y2="11"/><polyline points="11,10 13,12 15,9"/></svg>
+        </div>
+        <div>
+          <div style="font-size:14px;font-weight:700;color:#fff">İş Emri Oluştur</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:1px">Görevi ilgili kişiye atayın</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button onclick="minimizeIsEmri()" style="background:rgba(255,255,255,.15);border:none;cursor:pointer;color:#fff;padding:4px 10px;border-radius:6px;font-size:16px;line-height:1">—</button>
+        <button onclick="closeIsEmriModal()" style="background:rgba(255,255,255,.15);border:none;cursor:pointer;color:#fff;padding:4px 10px;border-radius:6px;font-size:18px;line-height:1">×</button>
+      </div>
+    </div>
+    <div class="modal-body">
+
+      <!-- İş emri veren — otomatik -->
+      <div style="background:linear-gradient(135deg,#EDE9FE,#F5F3FF);border:1px solid #C4B5FD;border-radius:var(--rl);padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px">
+        <div style="width:36px;height:36px;background:#7C3AED;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;flex-shrink:0" id="ie_verenAvatar">?</div>
+        <div>
+          <div style="font-size:10px;color:#7C3AED;font-weight:600;text-transform:uppercase;letter-spacing:.5px">İş Emrini Veren</div>
+          <div style="font-size:13px;font-weight:600;color:#1A1A2E" id="ie_verenAd">—</div>
+          <div style="font-size:11px;color:#6B7280" id="ie_verenDept">—</div>
+        </div>
+        <div style="margin-left:auto;font-size:11px;color:#7C3AED;font-weight:500" id="ie_verenTarih"></div>
+      </div>
+
+      <div class="form-sec">
+        <div class="form-sec-title">Proje & Görev Bilgileri</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Proje Talebi <span class="req">*</span></label>
+            <select id="ie_projeTalebi" onchange="checkIsEmriValid()">
+              <option value="">— Seçiniz —</option>
+              <option value="Teklif">Teklif</option>
+              <option value="Uygulama">Uygulama</option>
+              <option value="Ürün ve Yazılım Geliştirme">Ürün ve Yazılım Geliştirme</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Proje Adı <span class="req">*</span></label>
+            <div class="autocomplete-wrap">
+              <input type="text" id="ie_projeAdi" placeholder="Proje adını girin" oninput="checkIsEmriValid();showIsEmriAC()" onclick="showIsEmriAC()" autocomplete="off">
+              <div class="autocomplete-list" id="ie_projeAC"></div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Departman <span class="req">*</span></label>
+            <select id="ie_departman" onchange="onIeDeptChange();checkIsEmriValid()">
+              <option value="">— Seçiniz —</option>
+              <option value="İnşaat">İnşaat</option>
+              <option value="Mekanik">Mekanik</option>
+              <option value="Harita">Harita</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Öncelik</label>
+            <select id="ie_oncelik">
+              <option value="Orta">Orta</option>
+              <option value="Düşük">Düşük</option>
+              <option value="Yüksek">Yüksek</option>
+              <option value="Kritik">Kritik</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>İş Emri Verilen <span class="req">*</span></label>
+            <select id="ie_sorumlu" disabled onchange="checkIsEmriValid()"><option value="">— Önce departman seçin —</option></select>
+          </div>
+          <div class="form-group">
+            <label>Onaylayan <span class="req">*</span></label>
+            <select id="ie_onaylayan" disabled onchange="checkIsEmriValid()"><option value="">— Önce departman seçin —</option></select>
+          </div>
+          <div class="form-group full">
+            <label>İş Tanımı <span class="req">*</span></label>
+            <select id="ie_isTanimi" disabled onchange="onIeIsTanimiChange();checkIsEmriValid()"><option value="">— Önce departman seçin —</option></select>
+            <div id="ie_isTanimiManuelWrap" style="display:none;margin-top:6px">
+              <input type="text" id="ie_isTanimiManuel" placeholder="Yeni iş tanımı girin..."
+                style="width:100%;padding:8px 12px;border:1px solid var(--accent);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none"
+                oninput="checkIsEmriValid()">
+              <div style="font-size:10.5px;color:var(--accent);margin-top:4px">Bu iş tanımı listeye kalıcı olarak eklenecek</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-sec">
+        <div class="form-sec-title">Talep & Açıklama</div>
+        <div class="form-grid">
+          <div class="form-group full">
+            <label>Talep Sebebi <span class="req">*</span></label>
+            <textarea id="ie_talepSebebi" placeholder="Bu iş emrinin verilme sebebini açıklayın. Kapsam, beklentiler ve önemli notları belirtin..." style="min-height:80px" oninput="checkIsEmriValid()"></textarea>
+          </div>
+          <div class="form-group full">
+            <label>Dosya / Döküman Linki</label>
+            <input type="url" id="ie_dosyaLink" placeholder="https://drive.google.com/...">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-sec" style="margin-bottom:0">
+        <div class="form-sec-title">Tarihler</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Veriliş Tarihi</label>
+            <input type="date" id="ie_gelisTarihi">
+          </div>
+          <div class="form-group">
+            <label>İstenen Bitiş Tarihi</label>
+            <input type="date" id="ie_bitisTarihi">
+          </div>
+          <div class="form-group full">
+            <label>Ek Notlar</label>
+            <textarea id="ie_notlar" placeholder="Varsa ek açıklamalar..." style="min-height:56px"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot" style="border-top:2px solid #7C3AED">
+      <span class="modal-foot-l"><span class="req">*</span> Zorunlu alan</span>
+      <div class="modal-foot-r">
+        <button class="btn" onclick="closeIsEmriModal()">İptal</button>
+        <button class="ie-action-btn" id="isEmriSaveBtn" onclick="saveIsEmri()" disabled style="opacity:.4;cursor:not-allowed;background:linear-gradient(135deg,#4C1D95,#7C3AED);color:#fff">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;vertical-align:middle;margin-right:4px"><polyline points="1,8 5,12 15,4"/></svg>İş Emri Gönder
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- İŞ EMRİ MİNİMİZE -->
+<div id="isEmriMinimized" style="display:none;position:fixed;bottom:50px;right:16px;background:linear-gradient(135deg,#4C1D95,#7C3AED);color:#fff;border-radius:12px;padding:10px 16px;align-items:center;gap:10px;cursor:pointer;box-shadow:0 4px 20px rgba(124,58,237,.4);z-index:200;min-width:200px" onclick="restoreIsEmri()">
+  <div style="font-size:16px">📋</div>
+  <div><div style="font-size:12px;font-weight:600">İş Emri Oluştur</div><div style="font-size:10px;color:rgba(255,255,255,.7)">Devam etmek için tıklayın</div></div>
+  <button onclick="event.stopPropagation();closeIsEmriModal()" style="background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:11px;margin-left:auto">✕</button>
+</div>
+
+<!-- İŞ EMRİ DETAY PANELİ -->
+<div class="ie-panel" id="ieDetailPanel">
+  <div class="ie-panel-head">
+    <div>
+      <div style="font-size:13px;font-weight:700;color:#fff">İş Emri Detayı</div>
+      <div style="font-size:11px;color:rgba(255,255,255,.7)" id="iePanelProje">—</div>
+    </div>
+    <button onclick="closeIePanel()" style="background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:6px;padding:4px 10px;font-size:18px;cursor:pointer">×</button>
+  </div>
+  <div style="flex:1;overflow-y:auto;padding:16px" id="iePanelBody"></div>
+  <div style="padding:14px 16px;border-top:1px solid var(--border);background:var(--surface2);display:flex;gap:8px;flex-shrink:0" id="iePanelActions"></div>
+</div>
+<div id="ieOverlay" onclick="closeIePanel()" style="display:none;position:fixed;inset:0;z-index:149;background:rgba(0,0,0,.2)"></div>
+
+<!-- İŞ EMRİ MODALİ -->
+<div class="overlay" id="isEmriOverlay" onclick="minimizeIsEmri()">
+  <div class="modal" id="isEmriModal" onclick="event.stopPropagation()" style="width:680px">
+    <div class="modal-head" style="cursor:move" id="isEmriHead">
+      <div class="modal-head-l">
+        <div style="width:28px;height:28px;background:#7C3AED;border-radius:6px;display:flex;align-items:center;justify-content:center">
+          <svg viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="1.5" style="width:14px;height:14px"><path d="M2 2h12v3H2z"/><path d="M2 7h8"/><path d="M2 10h6"/><path d="M11 10l2 2 3-3"/></svg>
+        </div>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--text)">İş Emri Oluştur</div>
+          <div style="font-size:11px;color:var(--text3)">İş emri oluşturun ve ilgili kişiye gönderin</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <button onclick="minimizeIsEmri()" style="background:rgba(0,0,0,.08);border:none;cursor:pointer;color:var(--text2);padding:3px 10px;border-radius:6px;font-size:16px;line-height:1" title="Küçült">—</button>
+        <button onclick="closeIsEmriModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3);border-radius:var(--r);padding:2px 6px;line-height:1">×</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div class="form-sec">
+        <div class="form-sec-title">Temel Bilgiler</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Proje Talebi <span class="req">*</span></label>
+            <select id="ie_projeTalebi" onchange="checkIsEmriValid()">
+              <option value="">— Seçiniz —</option>
+              <option value="Teklif">Teklif</option>
+              <option value="Uygulama">Uygulama</option>
+              <option value="Ürün ve Yazılım Geliştirme">Ürün ve Yazılım Geliştirme</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Proje Adı <span class="req">*</span></label>
+            <div class="autocomplete-wrap">
+              <input type="text" id="ie_projeAdi" placeholder="Proje adını girin" oninput="checkIsEmriValid();showIsEmriAutocomplete()" onclick="showIsEmriAutocomplete()" autocomplete="off">
+              <div class="autocomplete-list" id="isEmriAutocomplete"></div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Departman <span class="req">*</span></label>
+            <select id="ie_departman" onchange="onIsEmriDeptChange();checkIsEmriValid()">
+              <option value="">— Seçiniz —</option>
+              <option value="İnşaat">İnşaat</option>
+              <option value="Mekanik">Mekanik</option>
+              <option value="Harita">Harita</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Öncelik</label>
+            <select id="ie_oncelik">
+              <option value="Orta">Orta</option>
+              <option value="Düşük">Düşük</option>
+              <option value="Yüksek">Yüksek</option>
+              <option value="Kritik">Kritik</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>İş Emri Verilen <span class="req">*</span></label>
+            <select id="ie_sorumlu" disabled onchange="checkIsEmriValid()"><option value="">— Önce departman seçin —</option></select>
+          </div>
+          <div class="form-group">
+            <label>Onaylayan <span class="req">*</span></label>
+            <select id="ie_onaylayan" disabled onchange="checkIsEmriValid()"><option value="">— Önce departman seçin —</option></select>
+          </div>
+          <div class="form-group full">
+            <label>İş Tanımı <span class="req">*</span></label>
+            <select id="ie_isTanimi" disabled onchange="onIeIsTanimiChange();checkIsEmriValid()"><option value="">— Önce departman seçin —</option></select>
+            <div id="ie_isTanimiManuelWrap" style="display:none;margin-top:6px">
+              <input type="text" id="ie_isTanimiManuel" placeholder="Yeni iş tanımı girin..."
+                style="width:100%;padding:8px 12px;border:1px solid var(--accent);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none"
+                oninput="checkIsEmriValid()">
+              <div style="font-size:10.5px;color:var(--accent);margin-top:4px">Bu iş tanımı listeye kalıcı olarak eklenecek</div>
+            </div>
+          </div>
+          <div class="form-group full">
+            <label>Talep Sebebi <span class="req">*</span></label>
+            <textarea id="ie_talepSebebi" placeholder="Bu iş emrinin verilme sebebini açıklayın..." style="min-height:60px" oninput="checkIsEmriValid()"></textarea>
+          </div>
+          <div class="form-group full">
+            <label>Dosya / Döküman Linki</label>
+            <input type="url" id="ie_dosyaLink" placeholder="https://drive.google.com/...">
+          </div>
+        </div>
+      </div>
+      <div class="form-sec">
+        <div class="form-sec-title">Tarihler</div>
+        <div class="form-grid">
+          <div class="form-group"><label>Veriliş Tarihi</label><input type="date" id="ie_gelisTarihi"></div>
+          <div class="form-group"><label>İstenen Bitiş Tarihi</label><input type="date" id="ie_bitisTarihi"></div>
+        </div>
+      </div>
+      <div class="form-sec" style="margin-bottom:0">
+        <div class="form-sec-title">Notlar</div>
+        <textarea id="ie_notlar" placeholder="Ek açıklamalar..." style="min-height:60px"></textarea>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <span class="modal-foot-l"><span class="req">*</span> Zorunlu alan</span>
+      <div class="modal-foot-r">
+        <button class="btn" onclick="closeIsEmriModal()">İptal</button>
+        <button class="btn" id="isEmriSaveBtn" onclick="saveIsEmri()" disabled style="opacity:.4;cursor:not-allowed;background:#7C3AED;color:#fff;border-color:#7C3AED">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><polyline points="2,8 6,12 14,4"/></svg> İş Emri Gönder
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- İŞ EMRİ MİNİMİZE BAR -->
+<div id="isEmriMinimized" style="display:none;position:fixed;bottom:50px;right:16px;background:linear-gradient(135deg,#4C1D95,#7C3AED);color:#fff;border-radius:12px;padding:10px 16px;display:none;align-items:center;gap:10px;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,.3);z-index:200;min-width:200px" onclick="restoreIsEmri()">
+  <div style="font-size:16px">📋</div>
+  <div>
+    <div style="font-size:12px;font-weight:600">İş Emri Oluştur</div>
+    <div style="font-size:10px;color:rgba(255,255,255,.7)">Devam etmek için tıklayın</div>
+  </div>
+  <button onclick="event.stopPropagation();closeIsEmriModal()" style="background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:11px;margin-left:auto">✕</button>
+</div>
 <div class="modal-minimized" id="modalMinimized" style="display:none" onclick="restoreModal()">
   <div class="modal-minimized-icon">📋</div>
   <div>
@@ -1118,7 +1441,7 @@ function fmtDate(d){ if(!d) return '—'; var p=d.split('-'); return p[2]+'.'+p[
 function isOD(r){ return r.bitisTarihi && r.durum!=='Tamamlandı' && r.durum!=='İptal' && new Date(r.bitisTarihi)<new Date(); }
 
 var IS_TANIMLARI={
-  'İnşaat':['İnşaat İşleri Metraj Hesabı (Çelik, Yol, Drenaj, Telçit vb.)','Drenaj Projesi','TM Betonarme Projesi','DM Betonarme Projesi','Telçit Paftası','Sabit Sistem Çelik Konstrüksiyon Hesabı','Sabit Sistem Çelik Konstrüksiyon Çizimi','Sabit Sistem Çelik Konstrüksiyon Raporu','Carport Hesabı','Çelik Sevk Takibi','Dolguya Uygunluk Kontrolü','Çelik Konstrüksiyon Proje','Betonarme Statik Proje'],
+  'İnşaat':['İnşaat İşleri Metraj Hesabı (Çelik, Yol, Drenaj, Telçit vb.)','Drenaj Projesi','TM Betonarme Projesi','DM Betonarme Projesi','Telçit Paftası','Sabit Sistem Çelik Konstrüksiyon Hesabı','Sabit Sistem Çelik Konstrüksiyon Çizimi','Sabit Sistem Çelik Konstrüksiyon Raporu','Carport Hesabı','Çelik Sevk Takibi','Dolguya Uygunluk Kontrolü','Çelik Konstrüksiyon Proje','Betonarme Statik Proje','İş Makinesi Fiyat Alma','Yakıt Fiyat Araştırması'],
   'Mekanik':['Tracker Sistem Çelik Konstrüksiyon Hesabı','Tracker Sistem Çelik Konstrüksiyon Çizimi','Tracker Sistem Çelik Konstrüksiyon Raporu','Telçit ve Kapı Detay Projesi','İnverter Support Projesi','Carport Çelik Hesabı','Çatı GES Konstrüksiyon','Prosedür ve Manuel Hazırlanması','Çakma-Çekme Testi','FAT','Tracker Devreye Alma','Satın Alma Öncesi Component Seçimi'],
   'Harita':['Tesviye Projesi (Panel Altı)','Yol Projesi','Tesviye ve Yol Projesi','Drenaj Projesi','Halihazır Harita Üretimi','Aplikasyon Elemanlarının Sayısallaştırılması']
 };
@@ -1224,10 +1547,17 @@ function renderTable(){
     var ss='<select style="'+statusStyle(r.durum)+';'+(canDurum?'':'opacity:.6;cursor:not-allowed;pointer-events:none')+'" onclick="event.stopPropagation()" onchange="quickStatus(\''+r.id+'\',this.value)" '+(canDurum?'':'disabled')+'>'+
       ['Bekliyor','Devam Ediyor','Revizyon','Tamamlandı','İptal'].map(function(s){return '<option value="'+s+'"'+(r.durum===s?' selected':'')+'>'+s+'</option>';}).join('')+'</select>';
     var lnk=r.dosyaLink?'<a href="'+esc(r.dosyaLink)+'" target="_blank" onclick="event.stopPropagation()" class="act-btn" title="Dosyayı Aç"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2H2v12h12v-4"/><polyline points="9,2 14,2 14,7"/><line x1="6" y1="10" x2="14" y2="2"/></svg></a>':'';
-    return '<tr'+(od?' class="overdue"':'')+' id="tr_'+r.id+'">'+'<td class="num">'+(i+1)+'</td>'+
+    var isEmriCls = r.isEmri ? (od?' overdue is-emri-row':' is-emri-row') : (od?' class="overdue"':'');
+    return '<tr'+(r.isEmri?isEmriCls:(od?' class="overdue"':''))+' id="tr_'+r.id+'">'+'<td class="num">'+(i+1)+'</td>'+
       '<td><span class="prio-dot '+(pDotCls[r.oncelik]||'prio-Orta')+'" title="'+(r.oncelik||'Orta')+'"></span> '+(r.oncelik||'Orta')+'</td>'+
       '<td>'+(r.projeTalebi?'<span class="badge badge-'+(talepCls[r.projeTalebi]||'bekliyor')+'">'+esc(r.projeTalebi)+'</span>':'—')+'</td>'+
-      '<td class="bold" title="'+esc(r.projeAdi)+'">'+(od?'⚠ ':'')+esc(r.projeAdi||'—')+'</td>'+
+      '<td class="bold" title="'+esc(r.projeAdi)+'" style="'+(r.isEmri?'cursor:pointer':'')+'">'+
+        (od?'<span style="color:#DC2626">⚠ </span>':'')+esc(r.projeAdi||'—')+
+        (r.isEmri?'<span class="ie-badge">'+
+          '<svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5" style="width:9px;height:9px;margin-right:2px"><polyline points="1,5 4,8 9,2"/></svg>'+
+          (r.isEmriDurum||'Beklemede')+'</span>':'')+
+        (r.isEmri&&r.isEmriVeren?' <span style="font-size:9px;color:var(--text3);font-style:italic">'+esc(r.isEmriVeren)+'</span>':'')+
+      '</td>'+
       '<td>'+esc(r.departman||'—')+'</td>'+
       '<td>'+esc(r.sorumlu||'—')+'</td>'+
       '<td>'+esc(r.onaylayan||'—')+'</td>'+
@@ -1462,7 +1792,12 @@ function onDepartmanChange(ks,ko,kt){
   bSel('f_onaylayan',ONAYLAYANLAR[dept],ko,!ks);
   var isSel=document.getElementById('f_isTanimi'),lst=IS_TANIMLARI[dept]||[];
   if(!lst.length){isSel.innerHTML='<option value="">— Önce departman seçin —</option>';isSel.disabled=true;}
-  else{isSel.innerHTML='<option value="">— Seçiniz —</option>'+lst.map(function(k){return '<option value="'+k+'"'+(k===kt?' selected':'')+'>'+k+'</option>';}).join('');isSel.disabled=false;}
+  else{
+    var _yeniOpt = currentUser ?
+      '<option value="__yeni__">➕ Yeni İş Tanımı Ekle...</option>' : '';
+    isSel.innerHTML='<option value="">— Seçiniz —</option>'+lst.map(function(k){return '<option value="'+k+'"'+(k===kt?' selected':'')+'>'+k+'</option>';}).join('')+_yeniOpt;
+    isSel.disabled=false;
+  }
 }
 function onSorumluChange(){
   var dept=document.getElementById('f_departman').value;
@@ -1569,12 +1904,36 @@ function validateTarihler() {
   return ok;
 }
 
+
+function onIsTanimiChange(){
+  var sel = document.getElementById('f_isTanimi');
+  var wrap = document.getElementById('isTanimiManuelWrap');
+  if(!wrap) return;
+  if(sel.value === '__yeni__'){
+    wrap.style.display = 'block';
+    document.getElementById('f_isTanimiManuel').focus();
+  } else {
+    wrap.style.display = 'none';
+    document.getElementById('f_isTanimiManuel').value = '';
+  }
+  checkFormValid();
+}
 function checkFormValid(){
   var btn = document.getElementById('saveBtn');
   if(!btn) return;
   var pt = document.getElementById('f_projeTalebi').value;
   var pa = document.getElementById('f_projeAdi').value.trim();
   var it = document.getElementById('f_isTanimi').value;
+  if(it === '__yeni__'){
+    var manuelVal = (document.getElementById('f_isTanimiManuel').value||'').trim();
+    if(!manuelVal){ showToast('⚠ İş tanımı girin'); return; }
+    it = manuelVal;
+    // Listeye kalıcı ekle
+    var dept2 = document.getElementById('f_departman').value;
+    if(dept2 && IS_TANIMLARI[dept2] && IS_TANIMLARI[dept2].indexOf(manuelVal)===-1){
+      IS_TANIMLARI[dept2].push(manuelVal);
+    }
+  }
   var oy = document.getElementById('f_onaylayan').value;
   var dept = document.getElementById('f_departman').value;
   var sor = document.getElementById('f_sorumlu').value;
@@ -1623,7 +1982,9 @@ function resetForm(){
     // İş tanımı
     var isSel = document.getElementById('f_isTanimi');
     var lst = IS_TANIMLARI[autoDept]||[];
-    isSel.innerHTML = '<option value="">— Seçiniz —</option>'+lst.map(function(k){return '<option value="'+k+'">'+k+'</option>';}).join('');
+    var _yeniOpt2 = currentUser ?
+      '<option value="__yeni__">➕ Yeni İş Tanımı Ekle...</option>' : '';
+    isSel.innerHTML = '<option value="">— Seçiniz —</option>'+lst.map(function(k){return '<option value="'+k+'">'+k+'</option>';}).join('')+_yeniOpt2;
     isSel.disabled = false;
   } else {
     ['f_sorumlu','f_onaylayan','f_isTanimi'].forEach(function(id){
@@ -1749,6 +2110,10 @@ function saveRecord(){
   if(!gelis){showToast('⚠ Geliş tarihi zorunludur!');return;}
   if(!pa&&pt!=='Ürün ve Yazılım Geliştirme'){showToast('⚠ Proje adı zorunludur!');return;}
   var it=document.getElementById('f_isTanimi').value;
+  if(it==='__yeni__'){
+    var manuel = (document.getElementById('f_isTanimiManuel').value||'').trim();
+    it = manuel ? '__yeni__' : '';
+  }
   if(!it||it.indexOf('Seçin')!==-1||it.indexOf('departman')!==-1){showToast('⚠ İş tanımı seçiniz!');return;}
   var oy=document.getElementById('f_onaylayan').value;
   if(!oy||oy.indexOf('Seçin')!==-1||oy.indexOf('departman')!==-1){showToast('⚠ Onaylayan seçiniz!');return;}
@@ -1882,9 +2247,8 @@ function setView(view,el){
   document.getElementById('pageTitle').textContent=titles[view]||view;
   document.getElementById('breadSub').textContent=subs[view]||'';
   document.getElementById('tableToolbarTitle').textContent=titles[view]||view;
-  // İş listesi, raporlar ve işlerim için filtrele — arşiv ve işlerim için iş listesine geç
-  if(activeTab==='tab-archive' || activeTab==='tab-myworks'){
-    // Bu sekmeler filtreyi desteklemiyor — iş listesine geç
+  // Arşiv, İşlerim, Kütüphane için iş listesine geç
+  if(activeTab==='tab-archive' || activeTab==='tab-myworks' || activeTab==='tab-kutuphane'){
     var tabBtn = document.getElementById('tab-btn-list');
     switchTab('tab-list', tabBtn||null);
   } else if(activeTab==='tab-list') {
@@ -2986,6 +3350,18 @@ function logout() {
 
 function updateProfileUI() {
   if(!currentUser) return;
+  // Aylık rapor butonu
+  var aylikBtn = document.getElementById('nav-aylik-rapor');
+  if(aylikBtn){
+    aylikBtn.style.display = '';
+  }
+  // İş emri veren bilgilerini hazırla
+  var verenAd = document.getElementById('ie_verenAd');
+  var verenDept = document.getElementById('ie_verenDept');
+  var verenAvatar = document.getElementById('ie_verenAvatar');
+  if(verenAd) verenAd.textContent = currentUser.ad;
+  if(verenDept) verenDept.textContent = currentUser.dept + ' Departmanı';
+  if(verenAvatar){ verenAvatar.textContent = getInitials(currentUser.ad); verenAvatar.style.background = currentUser.renk||'#7C3AED'; }
   var initials = getInitials(currentUser.ad);
   document.getElementById('profileAvatar').textContent = initials;
   document.getElementById('profileAvatar').style.background = currentUser.renk;
@@ -3191,7 +3567,12 @@ function renderNotifList() {
     var cls = n.okundu ? 'notif-item' : 'notif-item unread';
     var dot = n.okundu ? '' : '<div class="notif-unread-dot" style="flex-shrink:0"></div>';
     var proje = n.projeAdi ? '<br><em style="color:var(--text2);font-size:11px">'+esc(n.projeAdi)+'</em>' : '';
-    var tip = n.tip==='yeni' ? 'ekledi' : (n.tip==='yorum' ? 'üzerine yorum yaptı' : 'güncelledi');
+    var tipMap = {
+    'yeni':'ekledi','guncelleme':'güncelledi','yorum':'yorum yaptı',
+    'isemri':'size iş emri verdi','isemri_kabul':'iş emrini kabul etti',
+    'isemri_red':'iş emrini reddetti','isemri_tamam':'iş emrini tamamladı'
+  };
+  var tip = tipMap[n.tip] || 'güncelledi';
     html += '<div class="'+cls+'" id="ni_'+n.id+'">'+
       '<div class="user-avatar" style="background:'+renk+';width:32px;height:32px;font-size:12px;flex-shrink:0">'+initials+'</div>'+
       '<div class="notif-content" style="flex:1;min-width:0">'+
@@ -3238,33 +3619,40 @@ function notifClick(el) {
   var r = records.find(function(x){ return x.id === n.kayitId; });
   if(!r) r = records.find(function(x){ return x.projeAdi === n.projeAdi || x.isTanimi === n.projeAdi; });
   if(!r) { showToast('Kayıt bulunamadı'); return; }
-  // Tüm filtre sıfırla ve listeyi göster
+
+  // İş emri bildirimi ise — detay panelini aç
+  if(r.isEmri && (n.tip==='isemri'||n.tip==='isemri_kabul'||n.tip==='isemri_red'||n.tip==='isemri_tamam')){
+    currentView='all'; deptFilter=null;
+    if(!document.getElementById('tab-list').classList.contains('active')){
+      var tabBtn = document.getElementById('tab-btn-list');
+      switchTab('tab-list', tabBtn||null);
+    }
+    renderTable();
+    setTimeout(function(){
+      openIePanel(r.id);
+    }, 300);
+    return;
+  }
+
+  // Normal bildirim — tüm filtre sıfırla ve listeyi göster
   currentView = 'all'; deptFilter = null;
   document.querySelectorAll('.nav-item').forEach(function(i){i.classList.remove('active');});
   document.querySelectorAll('.nav-item')[0].classList.add('active');
   document.getElementById('pageTitle').textContent = 'Tüm İşler';
-  // Önce tab'ı İş Listesi yap
-  if(document.getElementById('tab-list').classList.contains('active') === false){
-    document.querySelectorAll('.tab-btn')[0].click();
+  if(!document.getElementById('tab-list').classList.contains('active')){
+    var tabBtn = document.getElementById('tab-btn-list');
+    switchTab('tab-list', tabBtn||null);
   }
   renderTable();
-  // Satırı bul ve aydınlat
   setTimeout(function(){
-    var rows = document.getElementById('tableBody').querySelectorAll('tr');
-    var found = null;
-    rows.forEach(function(row){
-      // Satır içinde proje adını ara
-      if(row.textContent.indexOf(r.projeAdi||r.isTanimi) !== -1) found = row;
-    });
-    if(found){
-      found.scrollIntoView({behavior:'smooth', block:'center'});
-      found.style.transition = 'background .2s';
-      found.style.background = '#DBEAFE';
-      setTimeout(function(){
-        found.style.background = '';
-        setTimeout(function(){ found.style.transition = ''; }, 400);
-      }, 2000);
+    var tr = document.getElementById('tr_'+r.id);
+    if(tr){
+      tr.scrollIntoView({behavior:'smooth', block:'center'});
+      tr.style.transition='background .2s';
+      tr.style.background='#DBEAFE';
+      setTimeout(function(){ tr.style.background=''; setTimeout(function(){ tr.style.transition=''; },400); }, 2000);
     }
+    showDetail(r.id);
     showToast('Kayıt bulundu ✓');
   }, 300);
 }
@@ -4388,11 +4776,33 @@ function editProjeTab(id){
 function saveProjeTab(id){
   var input = document.getElementById('eit_'+id);
   if(!input) return;
-  var ad = input.value.trim();
-  if(!ad){ showToast('⚠ Proje adı boş olamaz'); return; }
+  var yeniAd = input.value.trim();
+  if(!yeniAd){ showToast('⚠ Proje adı boş olamaz'); return; }
   if(!window._fbUpdateProje){ showToast('⚠ Firebase bağlı değil'); return; }
-  window._fbUpdateProje(id, ad).then(function(){
-    showToast('Proje güncellendi ✓');
+
+  // Eski adı bul
+  var p = (window._projeler||[]).find(function(x){ return x.id===id; });
+  var eskiAd = p ? p.ad : null;
+
+  window._fbUpdateProje(id, yeniAd).then(function(){
+    // Tüm kayıtlarda projeAdi güncelle
+    if(eskiAd && eskiAd !== yeniAd){
+      var etkilenen = records.filter(function(r){ return r.projeAdi === eskiAd; });
+      if(etkilenen.length){
+        var guncelleme = etkilenen.map(function(r){
+          r.projeAdi = yeniAd;
+          return window._fbSave(r);
+        });
+        Promise.all(guncelleme).then(function(){
+          showToast('Proje güncellendi — ' + etkilenen.length + ' kayıt da güncellendi ✓');
+          renderTable();
+        });
+      } else {
+        showToast('Proje güncellendi ✓');
+      }
+    } else {
+      showToast('Proje güncellendi ✓');
+    }
     setTimeout(renderKutuphaneTab, 300);
   });
 }
@@ -4409,6 +4819,975 @@ function addProjeToKutuphane2(){
     showToast('Proje eklendi ✓');
     setTimeout(renderKutuphaneTab, 300);
   });
+}
+
+
+// ── AYLIK RAPOR ──────────────────────────────
+
+function aylikRaporDeptChange(){
+  var dept = document.getElementById('aylikRaporDept').value;
+  var kisiSel = document.getElementById('aylikRaporKisi');
+  var kisiler = dept ? KULLANICILAR.filter(function(u){ return u.dept===dept; }) : [];
+  kisiSel.innerHTML = '<option value="">Tüm Kişiler</option>' +
+    kisiler.map(function(u){ return '<option value="'+u.ad+'">'+u.ad+'</option>'; }).join('');
+}
+function closeAylikRaporModal(){ var m=document.getElementById("aylikRaporModal"); if(m) m.remove(); }
+
+// ── WIZARD ──────────────────────────────────────
+var _wizardStep = 1;
+var _wizardTotal = 4;
+
+function wizardGoTo(step) {
+  _wizardStep = step;
+  // Panelleri güncelle
+  for(var i=1;i<=_wizardTotal;i++){
+    var pane = document.getElementById('wpane'+i);
+    if(pane) pane.classList.toggle('active', i===step);
+    var num = document.getElementById('wnum'+i);
+    var lbl = document.getElementById('wlbl'+i);
+    var sep = document.getElementById('wsep'+(i));
+    if(num){
+      num.className = 'wizard-step-num ' + (i<step?'done':(i===step?'active':'pending'));
+      if(i<step) num.innerHTML = '✓';
+      else num.innerHTML = i;
+    }
+    if(lbl) lbl.className = 'wizard-step-label ' + (i<step?'done':(i===step?'active':'pending'));
+    if(sep) sep.className = 'wizard-sep ' + (i<step?'done':'');
+  }
+  // Butonları güncelle
+  var backBtn = document.getElementById('wizardBackBtn');
+  var nextBtn = document.getElementById('wizardNextBtn');
+  var saveBtn = document.getElementById('saveBtn');
+  if(backBtn) backBtn.style.display = step>1 ? '' : 'none';
+  if(nextBtn) nextBtn.style.display = step<_wizardTotal ? '' : 'none';
+  if(saveBtn) saveBtn.style.display = step===_wizardTotal ? '' : 'none';
+  // Footer
+  var fl = document.getElementById('wizardFootL');
+  if(fl) fl.textContent = 'Adım '+step+' / '+_wizardTotal;
+}
+
+function wizardNext() {
+  // Adım 1 validasyon
+  if(_wizardStep===1){
+    var talep = document.getElementById('f_projeTalebi').value;
+    var proje = document.getElementById('f_projeAdi').value.trim();
+    var dept  = document.getElementById('f_departman').value;
+    var sor   = document.getElementById('f_sorumlu').value;
+    var onay  = document.getElementById('f_onaylayan').value;
+    if(!talep||!proje||!dept||!sor||!onay){
+      showToast('⚠ Lütfen tüm zorunlu alanları doldurun');
+      return;
+    }
+  }
+  // Adım 2 validasyon
+  if(_wizardStep===2){
+    var it = document.getElementById('f_isTanimi').value;
+    if(it==='__yeni__'){
+      var m = (document.getElementById('f_isTanimiManuel').value||'').trim();
+      if(!m){ showToast('⚠ İş tanımı girin'); return; }
+    } else if(!it){
+      showToast('⚠ İş tanımı seçin');
+      return;
+    }
+  }
+  // Adım 3 validasyon
+  if(_wizardStep===3){
+    var gelis = document.getElementById('f_gelisTarihi').value;
+    if(!gelis){ showToast('⚠ Geliş tarihi zorunlu'); return; }
+    if(!validateTarihler()) return;
+  }
+  if(_wizardStep < _wizardTotal) wizardGoTo(_wizardStep+1);
+}
+
+function wizardBack() {
+  if(_wizardStep > 1) wizardGoTo(_wizardStep-1);
+}
+
+function resetWizard() {
+  wizardGoTo(1);
+}
+
+
+// ── İŞ EMRİ ──────────────────────────────────────
+var IE_DURUM = {
+  BEKLEMEDE: 'Beklemede',
+  KABUL: 'Kabul Edildi',
+  REDDEDILDI: 'Reddedildi',
+  TAMAMLANDI: 'Tamamlandı'
+};
+
+function openIsEmriModal(){
+  if(!currentUser){ showToast('⚠ Giriş yapmanız gerekiyor'); return; }
+  // Veren bilgilerini doldur
+  document.getElementById('ie_verenAd').textContent = currentUser.ad;
+  document.getElementById('ie_verenDept').textContent = currentUser.dept + ' Departmanı';
+  var initials = getInitials(currentUser.ad);
+  var verenEl = document.getElementById('ie_verenAvatar');
+  verenEl.textContent = initials;
+  verenEl.style.background = currentUser.renk || '#7C3AED';
+  document.getElementById('ie_verenTarih').textContent = new Date().toLocaleDateString('tr-TR',{day:'2-digit',month:'long',year:'numeric'});
+  // Bugünün tarihi
+  document.getElementById('ie_gelisTarihi').value = new Date().toISOString().split('T')[0];
+  // Formu sıfırla
+  ['ie_projeTalebi','ie_projeAdi','ie_departman','ie_talepSebebi','ie_dosyaLink','ie_notlar','ie_bitisTarihi'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('ie_sorumlu').innerHTML='<option value="">— Önce departman seçin —</option>';
+  document.getElementById('ie_sorumlu').disabled=true;
+  document.getElementById('ie_onaylayan').innerHTML='<option value="">— Önce departman seçin —</option>';
+  document.getElementById('ie_onaylayan').disabled=true;
+  document.getElementById('ie_isTanimi').innerHTML='<option value="">— Önce departman seçin —</option>';
+  document.getElementById('ie_isTanimi').disabled=true;
+  checkIsEmriValid();
+
+  var modalEl=document.getElementById('isEmriModal');
+  if(modalEl){
+    modalEl.style.left='50%';modalEl.style.top='50%';
+    modalEl.style.transform='translate(-50%,-50%)';
+    modalEl.style.visibility='hidden';
+  }
+  document.getElementById('isEmriOverlay').classList.add('open');
+  requestAnimationFrame(function(){requestAnimationFrame(function(){
+    if(modalEl){
+      modalEl.style.visibility='visible';
+      var head=document.getElementById('isEmriHead');
+      if(head&&!head._draggable){makeDraggable(modalEl,head);head._draggable=true;}
+    }
+  });});
+}
+
+function closeIsEmriModal(){
+  document.getElementById('isEmriOverlay').classList.remove('open');
+  var min=document.getElementById('isEmriMinimized');
+  if(min) min.style.display='none';
+}
+function minimizeIsEmri(){
+  document.getElementById('isEmriOverlay').classList.remove('open');
+  document.getElementById('isEmriMinimized').style.display='flex';
+}
+function restoreIsEmri(){
+  document.getElementById('isEmriMinimized').style.display='none';
+  document.getElementById('isEmriOverlay').classList.add('open');
+}
+
+function onIeDeptChange(){
+  var dept=document.getElementById('ie_departman').value;
+  if(!dept) return;
+  var kisiler=SORUMLULAR[dept]||[];
+  var sorSel = document.getElementById('ie_sorumlu');
+  sorSel.innerHTML='<option value="">— Seçiniz —</option>'+
+    kisiler.map(function(k){return '<option value="'+k+'">'+k+'</option>';}).join('');
+  sorSel.disabled = false;
+  var onaylar=ONAYLAYANLAR[dept]||[];
+  var onaySel = document.getElementById('ie_onaylayan');
+  onaySel.innerHTML='<option value="">— Seçiniz —</option>'+
+    onaylar.map(function(k){return '<option value="'+k+'">'+k+'</option>';}).join('');
+  onaySel.disabled = false;
+  var lst=IS_TANIMLARI[dept]||[];
+  var yeniOpt='<option value="__yeni__">➕ Yeni İş Tanımı Ekle...</option>';
+  document.getElementById('ie_isTanimi').innerHTML='<option value="">— Seçiniz —</option>'+
+    lst.map(function(t){return '<option value="'+t+'">'+t+'</option>';}).join('')+yeniOpt;
+  document.getElementById('ie_isTanimi').disabled=false;
+}
+
+
+function onIeIsTanimiChange(){
+  var sel = document.getElementById('ie_isTanimi');
+  var wrap = document.getElementById('ie_isTanimiManuelWrap');
+  if(!wrap) return;
+  if(sel.value === '__yeni__'){
+    wrap.style.display = 'block';
+    document.getElementById('ie_isTanimiManuel').focus();
+  } else {
+    wrap.style.display = 'none';
+    document.getElementById('ie_isTanimiManuel').value = '';
+  }
+}
+function checkIsEmriValid(){
+  var ieTanimi = document.getElementById('ie_isTanimi').value;
+  if(ieTanimi==='__yeni__'){
+    ieTanimi = (document.getElementById('ie_isTanimiManuel').value||'').trim() ? '__yeni__' : '';
+  }
+  var ok = document.getElementById('ie_projeTalebi').value &&
+    (document.getElementById('ie_projeAdi').value||'').trim() &&
+    document.getElementById('ie_departman').value &&
+    document.getElementById('ie_sorumlu').value &&
+    document.getElementById('ie_onaylayan').value &&
+    ieTanimi &&
+    (document.getElementById('ie_talepSebebi').value||'').trim();
+  var btn=document.getElementById('isEmriSaveBtn');
+  if(btn){btn.disabled=!ok;btn.style.opacity=ok?'1':'.4';btn.style.cursor=ok?'pointer':'not-allowed';}
+}
+
+function showIsEmriAC(){
+  var input=document.getElementById('ie_projeAdi');
+  var list=document.getElementById('ie_projeAC');
+  if(!input||!list) return;
+  var q=input.value.toLowerCase().trim();
+  var filtered=(window._projeler||[]).filter(function(p){return !q||p.ad.toLowerCase().indexOf(q)!==-1;});
+  if(!filtered.length){list.classList.remove('open');return;}
+  list.innerHTML=filtered.map(function(p){
+    return '<div class="autocomplete-item" data-ad="'+esc(p.ad)+'"><span>'+esc(p.ad)+'</span></div>';
+  }).join('');
+  list.classList.add('open');
+  list.onclick=function(e){
+    var item=e.target.closest('.autocomplete-item');
+    if(!item) return;
+    input.value=item.getAttribute('data-ad');
+    list.classList.remove('open');
+    checkIsEmriValid();
+  };
+}
+
+function saveIsEmri(){
+  if(!currentUser){showToast('⚠ Giriş yapmanız gerekiyor');return;}
+  var obj={
+    id:genId(),
+    projeTalebi:document.getElementById('ie_projeTalebi').value,
+    projeAdi:document.getElementById('ie_projeAdi').value.trim(),
+    departman:document.getElementById('ie_departman').value,
+    oncelik:document.getElementById('ie_oncelik').value,
+    sorumlu:document.getElementById('ie_sorumlu').value,
+    onaylayan:document.getElementById('ie_onaylayan').value,
+    isTanimi:(function(){
+      var v = document.getElementById('ie_isTanimi').value;
+      if(v==='__yeni__'){
+        var m = (document.getElementById('ie_isTanimiManuel').value||'').trim();
+        var d = document.getElementById('ie_departman').value;
+        if(d && IS_TANIMLARI[d] && IS_TANIMLARI[d].indexOf(m)===-1) IS_TANIMLARI[d].push(m);
+        return m;
+      }
+      return v;
+    })(),
+    talepSebebi:document.getElementById('ie_talepSebebi').value.trim(),
+    dosyaLink:document.getElementById('ie_dosyaLink').value.trim(),
+    gelisTarihi:document.getElementById('ie_gelisTarihi').value,
+    bitisTarihi:document.getElementById('ie_bitisTarihi').value,
+    notlar:document.getElementById('ie_notlar').value.trim(),
+    durum:'Bekliyor',
+    isEmri:true,
+    isEmriDurum:IE_DURUM.BEKLEMEDE,
+    isEmriVeren:currentUser.ad,
+    isEmriVerenId:currentUser.id,
+    ekleyen:currentUser.id,
+    zaman:Date.now()
+  };
+  if(!window._fbSave){showToast('⚠ Firebase bağlı değil');return;}
+  window._fbSave(obj).then(function(){
+    // Sorumluya bildirim
+    var hedef=KULLANICILAR.find(function(u){return u.ad===obj.sorumlu&&u.id!==currentUser.id;});
+    if(hedef&&window._fbSaveNotif){
+      window._fbSaveNotif({id:genId(),gonderen:currentUser.id,hedef:hedef.id,
+        tip:'isemri',projeAdi:obj.projeAdi,kayitId:obj.id,
+        mesaj:currentUser.ad+' size bir iş emri verdi: '+obj.isTanimi,
+        zaman:Date.now(),okundu:false});
+    }
+    closeIsEmriModal();
+    showToast('✓ İş emri gönderildi!');
+  }).catch(function(e){showToast('⚠ Hata: '+e.message);});
+}
+
+// İş emri detay paneli
+function openIePanel(rid){
+  var r=records.find(function(x){return x.id===rid;});
+  if(!r||!r.isEmri) return;
+  document.getElementById('iePanelProje').textContent=r.projeAdi||'—';
+
+  var durumRenk={
+    'Beklemede':['#FEF3C7','#D97706'],
+    'Kabul Edildi':['#D1FAE5','#059669'],
+    'Reddedildi':['#FEE2E2','#DC2626'],
+    'Tamamlandı':['#DBEAFE','#1D4ED8']
+  };
+  var dc=durumRenk[r.isEmriDurum]||['#F3F4F6','#374151'];
+
+  document.getElementById('iePanelBody').innerHTML=
+    '<div style="background:linear-gradient(135deg,#EDE9FE,#F5F3FF);border:1px solid #C4B5FD;border-radius:10px;padding:14px;margin-bottom:14px">'+
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start">'+
+        '<div>'+
+          '<div style="font-size:10px;color:#7C3AED;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">İş Emri Veren</div>'+
+          '<div style="font-size:14px;font-weight:700;color:#1A1A2E">'+esc(r.isEmriVeren||'—')+'</div>'+
+        '</div>'+
+        '<span style="background:'+dc[0]+';color:'+dc[1]+';font-size:11px;font-weight:700;padding:4px 12px;border-radius:10px">'+esc(r.isEmriDurum||'Beklemede')+'</span>'+
+      '</div>'+
+    '</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">'+
+      '<div style="background:var(--surface2);border-radius:8px;padding:10px">'+
+        '<div style="font-size:9px;color:var(--text3);font-weight:600;text-transform:uppercase;margin-bottom:3px">Proje Adı</div>'+
+        '<div style="font-size:12.5px;font-weight:600;color:var(--text)">'+esc(r.projeAdi||'—')+'</div>'+
+      '</div>'+
+      '<div style="background:var(--surface2);border-radius:8px;padding:10px">'+
+        '<div style="font-size:9px;color:var(--text3);font-weight:600;text-transform:uppercase;margin-bottom:3px">İş Tanımı</div>'+
+        '<div style="font-size:12.5px;font-weight:600;color:var(--text)">'+esc(r.isTanimi||'—')+'</div>'+
+      '</div>'+
+      '<div style="background:var(--surface2);border-radius:8px;padding:10px">'+
+        '<div style="font-size:9px;color:var(--text3);font-weight:600;text-transform:uppercase;margin-bottom:3px">Sorumlu</div>'+
+        '<div style="font-size:12.5px;font-weight:600;color:var(--text)">'+esc(r.sorumlu||'—')+'</div>'+
+      '</div>'+
+      '<div style="background:var(--surface2);border-radius:8px;padding:10px">'+
+        '<div style="font-size:9px;color:var(--text3);font-weight:600;text-transform:uppercase;margin-bottom:3px">Öncelik</div>'+
+        '<div style="font-size:12.5px;font-weight:600;color:var(--text)">'+esc(r.oncelik||'Orta')+'</div>'+
+      '</div>'+
+      '<div style="background:var(--surface2);border-radius:8px;padding:10px">'+
+        '<div style="font-size:9px;color:var(--text3);font-weight:600;text-transform:uppercase;margin-bottom:3px">Veriliş Tarihi</div>'+
+        '<div style="font-size:12.5px;font-weight:600;color:var(--text)">'+(r.gelisTarihi?fmtDate(r.gelisTarihi):'—')+'</div>'+
+      '</div>'+
+      '<div style="background:var(--surface2);border-radius:8px;padding:10px">'+
+        '<div style="font-size:9px;color:var(--text3);font-weight:600;text-transform:uppercase;margin-bottom:3px">İstenen Bitiş</div>'+
+        '<div style="font-size:12.5px;font-weight:600;color:'+(r.bitisTarihi&&new Date(r.bitisTarihi)<new Date()?'#DC2626':'var(--text)')+'">'+
+          (r.bitisTarihi?fmtDate(r.bitisTarihi):'—')+
+        '</div>'+
+      '</div>'+
+    '</div>'+
+    '<div style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:10px">'+
+      '<div style="font-size:9px;color:var(--text3);font-weight:600;text-transform:uppercase;margin-bottom:6px">Talep Sebebi</div>'+
+      '<div style="font-size:12.5px;color:var(--text2);line-height:1.6;white-space:pre-wrap">'+esc(r.talepSebebi||'—')+'</div>'+
+    '</div>'+
+    (r.redSebebi?
+      '<div style="background:#FEE2E2;border:1px solid #FECACA;border-radius:8px;padding:12px;margin-bottom:10px">'+
+        '<div style="font-size:9px;color:#DC2626;font-weight:600;text-transform:uppercase;margin-bottom:6px">Red Sebebi</div>'+
+        '<div style="font-size:12.5px;color:#991B1B;line-height:1.6">'+esc(r.redSebebi)+'</div>'+
+      '</div>' : '')+
+    (r.notlar?
+      '<div style="background:var(--surface2);border-radius:8px;padding:12px">'+
+        '<div style="font-size:9px;color:var(--text3);font-weight:600;text-transform:uppercase;margin-bottom:6px">Notlar</div>'+
+        '<div style="font-size:12.5px;color:var(--text2)">'+esc(r.notlar)+'</div>'+
+      '</div>' : '');
+
+  // Aksiyon butonları
+  var actions='';
+  var canAct = currentUser && (r.sorumlu===currentUser.ad);
+  var isVeren = currentUser && r.isEmriVerenId===currentUser.id;
+
+  if(canAct && r.isEmriDurum===IE_DURUM.BEKLEMEDE){
+    actions+=
+      '<button class="ie-action-btn" style="background:#059669;color:#fff;flex:1" data-xid="'+r.id+'" onclick="kabul_Et(this.dataset.xid)">✓ Kabul Et</button>'+
+      '<button class="ie-action-btn" style="background:#DC2626;color:#fff;flex:1" data-xid="'+r.id+'" onclick="showRedForm(this.dataset.xid)">✗ Reddet</button>';
+  }
+  if(canAct && r.isEmriDurum===IE_DURUM.KABUL){
+    actions+='<button class="ie-action-btn" style="background:#1D4ED8;color:#fff;flex:1" data-xid="'+r.id+'" onclick="isEmriTamamla(this.dataset.xid)">✓ Tamamlandı Olarak İşaretle</button>';
+  }
+  if((canAct||isVeren) && r.isEmriDurum===IE_DURUM.KABUL){
+    actions+='<button class="ie-action-btn" style="background:#7C3AED;color:#fff;flex:1" data-xid="'+r.id+'" onclick="isEmriniIseCevir(this.dataset.xid)">📋 İş Listesine Taşı</button>';
+  }
+  if(!actions) actions='<div style="color:var(--text3);font-size:12px;text-align:center;width:100%">'+esc(r.isEmriDurum||'Beklemede')+'</div>';
+  document.getElementById('iePanelActions').innerHTML=actions;
+
+  document.getElementById('ieDetailPanel').classList.add('open');
+  document.getElementById('ieOverlay').style.display='block';
+}
+
+function closeIePanel(){
+  document.getElementById('ieDetailPanel').classList.remove('open');
+  document.getElementById('ieOverlay').style.display='none';
+}
+
+function kabul_Et(rid){
+  var r=records.find(function(x){return x.id===rid;});
+  if(!r) return;
+  r.isEmriDurum=IE_DURUM.KABUL;
+  window._fbSave(r).then(function(){
+    // Verene bildirim
+    var veren=KULLANICILAR.find(function(u){return u.id===r.isEmriVerenId;});
+    if(veren&&window._fbSaveNotif){
+      window._fbSaveNotif({id:genId(),gonderen:currentUser.id,hedef:veren.id,
+        tip:'isemri_kabul',projeAdi:r.projeAdi,kayitId:r.id,
+        mesaj:currentUser.ad+' iş emrini kabul etti.',zaman:Date.now(),okundu:false});
+    }
+    showToast('✓ İş emri kabul edildi');
+    closeIePanel();
+  });
+}
+
+function showRedForm(rid){
+  var r=records.find(function(x){return x.id===rid;});
+  if(!r) return;
+  document.getElementById('iePanelActions').innerHTML=
+    '<div style="width:100%">'+
+      '<textarea id="redSebebiInput" placeholder="Red sebebini açıklayın..." style="width:100%;padding:8px;border:1px solid #FECACA;border-radius:8px;font-size:12px;font-family:inherit;outline:none;min-height:60px;resize:vertical;margin-bottom:8px"></textarea>'+
+      '<div style="display:flex;gap:8px">'+
+        '<button class="ie-action-btn" style="background:#DC2626;color:#fff;flex:1" data-xid="'+rid+'" onclick="reddetIsEmri(this.dataset.xid)">✗ Reddet</button>'+
+        '<button class="ie-action-btn" style="background:var(--surface3);color:var(--text);flex:1" data-xid="'+rid+'" onclick="openIePanel(this.dataset.xid)">İptal</button>'+
+      '</div>'+
+    '</div>';
+}
+
+function reddetIsEmri(rid){
+  var sebep=(document.getElementById('redSebebiInput').value||'').trim();
+  if(!sebep){showToast('⚠ Red sebebi girin');return;}
+  var r=records.find(function(x){return x.id===rid;});
+  if(!r) return;
+  r.isEmriDurum=IE_DURUM.REDDEDILDI;
+  r.redSebebi=sebep;
+  window._fbSave(r).then(function(){
+    var veren=KULLANICILAR.find(function(u){return u.id===r.isEmriVerenId;});
+    if(veren&&window._fbSaveNotif){
+      window._fbSaveNotif({id:genId(),gonderen:currentUser.id,hedef:veren.id,
+        tip:'isemri_red',projeAdi:r.projeAdi,kayitId:r.id,
+        mesaj:currentUser.ad+' iş emrini reddetti: '+sebep.slice(0,50),
+        zaman:Date.now(),okundu:false});
+    }
+    showToast('İş emri reddedildi');
+    closeIePanel();
+  });
+}
+
+function isEmriTamamla(rid){
+  var r=records.find(function(x){return x.id===rid;});
+  if(!r) return;
+  r.isEmriDurum=IE_DURUM.TAMAMLANDI;
+  r.durum='Tamamlandı';
+  window._fbSave(r).then(function(){
+    var veren=KULLANICILAR.find(function(u){return u.id===r.isEmriVerenId;});
+    if(veren&&window._fbSaveNotif){
+      window._fbSaveNotif({id:genId(),gonderen:currentUser.id,hedef:veren.id,
+        tip:'isemri_tamam',projeAdi:r.projeAdi,kayitId:r.id,
+        mesaj:currentUser.ad+' iş emrini tamamladı!',zaman:Date.now(),okundu:false});
+    }
+    showToast('✓ İş emri tamamlandı!');
+    closeIePanel();
+  });
+}
+
+function isEmriniIseCevir(rid){
+  var r=records.find(function(x){return x.id===rid;});
+  if(!r) return;
+  // İş emri işaretini kaldır, normal iş yap
+  r.isEmri=false;
+  r.isEmriDurum=null;
+  window._fbSave(r).then(function(){
+    showToast('✓ İş emri, iş listesine taşındı');
+    closeIePanel();
+    renderTable();
+  });
+}
+
+function openAylikRapor() {
+  var now = new Date();
+  var ay = now.getMonth();
+  var yil = now.getFullYear();
+
+  // Modal HTML oluştur
+  var modal = document.getElementById('aylikRaporModal');
+  if(!modal){
+    modal = document.createElement('div');
+    modal.id = 'aylikRaporModal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;display:flex;align-items:center;justify-content:center';
+    modal.innerHTML =
+      '<div style="background:var(--surface);border-radius:12px;width:480px;max-width:96vw;box-shadow:0 20px 60px rgba(0,0,0,.3)">'+
+        '<div style="background:linear-gradient(135deg,#0F1923,#1E3250);padding:16px 20px;border-radius:12px 12px 0 0;display:flex;align-items:center;justify-content:space-between">'+
+          '<div style="color:#fff;font-size:14px;font-weight:600">📊 Aylık Rapor Oluştur</div>'+
+          '<button onclick="closeAylikRaporModal()" style="background:none;border:none;color:rgba(255,255,255,.7);font-size:20px;cursor:pointer">×</button>'+
+        '</div>'+
+        '<div style="padding:20px">'+
+          '<div style="margin-bottom:14px">'+
+            '<label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Dönem Seçin</label>'+
+            '<div style="display:flex;gap:8px">'+
+              '<select id="aylikRaporAy" style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:var(--r);font-family:inherit;font-size:13px">'+
+                ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'].map(function(a,i){
+                  return '<option value="'+i+'"'+(i===ay?' selected':'')+'>'+a+'</option>';
+                }).join('')+
+              '</select>'+
+              '<select id="aylikRaporYil" style="width:100px;padding:8px 12px;border:1px solid var(--border);border-radius:var(--r);font-family:inherit;font-size:13px">'+
+                [yil-1,yil,yil+1].map(function(y){return '<option value="'+y+'"'+(y===yil?' selected':'')+'>'+y+'</option>';}).join('')+
+              '</select>'+
+            '</div>'+
+          '</div>'+
+          '<div style="margin-bottom:14px">'+
+            '<label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Departman</label>'+
+            '<select id="aylikRaporDept" onchange="aylikRaporDeptChange()" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:var(--r);font-family:inherit;font-size:13px">'+
+              '<option value="">Tüm Departmanlar</option>'+
+              ['İnşaat','Mekanik','Harita'].map(function(d){return '<option value="'+d+'">'+d+'</option>';}).join('')+
+            '</select>'+
+          '</div>'+
+          '<div style="margin-bottom:14px" id="aylikRaporKisiWrap">'+
+            '<label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Kişi</label>'+
+            '<select id="aylikRaporKisi" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:var(--r);font-family:inherit;font-size:13px">'+
+              '<option value="">Tüm Kişiler</option>'+
+            '</select>'+
+          '</div>'+
+          '<div style="margin-bottom:14px">'+
+            '<label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">E-posta (opsiyonel)</label>'+
+            '<div style="display:flex;align-items:center;border:1px solid var(--border);border-radius:var(--r);overflow:hidden">'+
+              '<input type="text" id="aylikRaporEmail" placeholder="isim.soyisim" style="flex:1;padding:8px 10px;border:none;font-family:inherit;font-size:13px;outline:none;min-width:0">'+
+              '<span style="background:#F3F4F6;padding:8px 10px;font-size:13px;color:#6B7280;white-space:nowrap;border-left:1px solid var(--border)">@smartsolar.com.tr</span>'+
+            '</div>'+
+          '</div>'+
+          '<div style="display:flex;gap:8px;justify-content:flex-end">'+
+            '<button onclick="closeAylikRaporModal()" class="btn">İptal</button>'+
+            '<button onclick="generateAylikRapor()" class="btn btn-primary">📄 PDF Oluştur</button>'+
+          '</div>'+
+        '</div>'+
+      '</div>';
+    document.body.appendChild(modal);
+  } else {
+    modal.style.display = 'flex';
+  }
+}
+
+function generateAylikRapor(){
+  var ay = parseInt(document.getElementById('aylikRaporAy').value);
+  var yil = parseInt(document.getElementById('aylikRaporYil').value);
+  var emailPrefix = (document.getElementById('aylikRaporEmail').value||'').trim();
+  var email = emailPrefix ? emailPrefix + '@smartsolar.com.tr' : '';
+  var ayAdlari = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+  var donem = ayAdlari[ay] + ' ' + yil;
+  var kapsam = secilenKisi ? secilenKisi : (secilenDept ? secilenDept+' Departmanı' : 'Genel');
+  var donemEk = ' · ' + kapsam;
+  var tarih = new Date().toLocaleDateString('tr-TR',{day:'2-digit',month:'long',year:'numeric'});
+
+  var secilenDept = document.getElementById('aylikRaporDept').value;
+  var secilenKisi = document.getElementById('aylikRaporKisi').value;
+
+  // O aya ait veriler — geliş tarihi o ay olanlar
+  var ayData = records.filter(function(r){
+    if(!r.gelisTarihi) return false;
+    var d = new Date(r.gelisTarihi);
+    if(d.getMonth()!==ay || d.getFullYear()!==yil) return false;
+    if(secilenDept && r.departman !== secilenDept) return false;
+    if(secilenKisi && r.sorumlu !== secilenKisi) return false;
+    return true;
+  });
+
+  // Tamamlanan o ay
+  var tamamlananAy = records.filter(function(r){
+    if(!r.bitisTarihi) return false;
+    var d = new Date(r.bitisTarihi);
+    if(d.getMonth()!==ay || d.getFullYear()!==yil) return false;
+    if(r.durum!=='Tamamlandı') return false;
+    if(secilenDept && r.departman !== secilenDept) return false;
+    if(secilenKisi && r.sorumlu !== secilenKisi) return false;
+    return true;
+  });
+
+  // KPI
+  var toplam = ayData.length;
+  var devam = ayData.filter(function(r){return r.durum==='Devam Ediyor';}).length;
+  var bekliyor = ayData.filter(function(r){return r.durum==='Bekliyor';}).length;
+  var tamam = tamamlananAy.length;
+  var geciken = ayData.filter(function(r){return isOD(r);}).length;
+  var iptal = ayData.filter(function(r){return r.durum==='İptal';}).length;
+
+  // Departman bazlı
+  var deptMap = {};
+  ayData.forEach(function(r){
+    var d = r.departman||'—';
+    if(!deptMap[d]) deptMap[d]={toplam:0,tamam:0,devam:0,bekliyor:0,geciken:0};
+    deptMap[d].toplam++;
+    if(r.durum==='Tamamlandı') deptMap[d].tamam++;
+    if(r.durum==='Devam Ediyor') deptMap[d].devam++;
+    if(r.durum==='Bekliyor') deptMap[d].bekliyor++;
+    if(isOD(r)) deptMap[d].geciken++;
+  });
+
+  // Kişi bazlı
+  var kisiMap = {};
+  ayData.forEach(function(r){
+    var s = r.sorumlu||'—';
+    if(!kisiMap[s]) kisiMap[s]={toplam:0,tamam:0,devam:0,geciken:0,dept:r.departman||''};
+    kisiMap[s].toplam++;
+    if(r.durum==='Tamamlandı') kisiMap[s].tamam++;
+    if(r.durum==='Devam Ediyor') kisiMap[s].devam++;
+    if(isOD(r)) kisiMap[s].geciken++;
+  });
+
+  // Geciken işler
+  var gecikenler = ayData.filter(function(r){return isOD(r);});
+
+  // HTML rapor oluştur
+  var html = '<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8">'+
+    '<title>Aylık Rapor — '+donem+'</title>'+
+    '<style>'+
+    '@page{size:A4;margin:12mm}'+
+    '*{box-sizing:border-box;margin:0;padding:0}'+
+    'body{font-family:Arial,sans-serif;font-size:10px;color:#1A1A2E}'+
+    '.header{background:linear-gradient(135deg,#0F1923,#1E3250);color:#fff;padding:16px 20px;border-radius:8px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}'+
+    '.header h1{font-size:18px;font-weight:700}.header p{font-size:10px;color:#8DA8C4;margin-top:3px}'+
+    '.kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:14px}'+
+    '.kpi{border-radius:8px;padding:10px;text-align:center}'+
+    '.kpi-num{font-size:22px;font-weight:700;line-height:1}'+
+    '.kpi-lbl{font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-top:3px;opacity:.8}'+
+    '.sec-title{font-size:11px;font-weight:700;color:#1E3250;text-transform:uppercase;letter-spacing:.5px;margin:12px 0 6px;padding-bottom:4px;border-bottom:2px solid #1E3250}'+
+    'table{width:100%;border-collapse:collapse;font-size:9px;margin-bottom:10px}'+
+    'thead tr{background:#1E3250}'+
+    'th{color:#fff;padding:6px 8px;text-align:left;font-weight:600;font-size:8.5px}'+
+    'td{padding:5px 8px;border-bottom:1px solid #EEF2FF}'+
+    'tr:nth-child(even) td{background:#F9FAFB}'+
+    '.badge{padding:2px 7px;border-radius:10px;font-size:8px;font-weight:700}'+
+    '.footer{margin-top:14px;padding-top:8px;border-top:1px solid #E5E7EB;font-size:8px;color:#9CA3AF;display:flex;justify-content:space-between}'+
+    '@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}'+
+    '</style></head><body>'+
+
+    '<div class="header">'+
+      '<div><h1>📊 Aylık Faaliyet Raporu</h1><p>Smart Güneş Enerjisi Teknolojileri · İnşaat İşleri Takip Sistemi</p></div>'+
+      '<div style="text-align:right"><div style="font-size:20px;font-weight:700">'+donem+'</div><div style="font-size:9px;color:#8DA8C4">Oluşturulma: '+tarih+'</div></div>'+
+    '</div>'+
+
+    '<div class="kpi-grid">'+
+      '<div class="kpi" style="background:#DBEAFE"><div class="kpi-num" style="color:#1D4ED8">'+toplam+'</div><div class="kpi-lbl" style="color:#1D4ED8">Toplam</div></div>'+
+      '<div class="kpi" style="background:#D1FAE5"><div class="kpi-num" style="color:#059669">'+devam+'</div><div class="kpi-lbl" style="color:#059669">Devam Eden</div></div>'+
+      '<div class="kpi" style="background:#FEF3C7"><div class="kpi-num" style="color:#D97706">'+bekliyor+'</div><div class="kpi-lbl" style="color:#D97706">Bekliyor</div></div>'+
+      '<div class="kpi" style="background:#DBEAFE"><div class="kpi-num" style="color:#2563EB">'+tamam+'</div><div class="kpi-lbl" style="color:#2563EB">Tamamlandı</div></div>'+
+      '<div class="kpi" style="background:#FEE2E2"><div class="kpi-num" style="color:#DC2626">'+geciken+'</div><div class="kpi-lbl" style="color:#DC2626">Geciken</div></div>'+
+      '<div class="kpi" style="background:#F3F4F6"><div class="kpi-num" style="color:#6B7280">'+iptal+'</div><div class="kpi-lbl" style="color:#6B7280">İptal</div></div>'+
+    '</div>'+
+
+    '<div class="sec-title">Departman Bazlı Özet</div>'+
+    '<table><thead><tr><th>Departman</th><th>Toplam</th><th>Devam</th><th>Bekliyor</th><th>Tamamlandı</th><th>Geciken</th><th>Tamamlanma %</th></tr></thead><tbody>'+
+    Object.keys(deptMap).map(function(d){
+      var v=deptMap[d];
+      var pct=Math.round(v.tamam/v.toplam*100);
+      return '<tr><td style="font-weight:600">'+esc(d)+'</td><td>'+v.toplam+'</td><td>'+v.devam+'</td><td>'+v.bekliyor+'</td><td>'+v.tamam+'</td>'+
+        '<td style="color:'+(v.geciken?'#DC2626':'#9CA3AF')+'">'+v.geciken+'</td>'+
+        '<td><div style="background:#E5E7EB;border-radius:3px;height:6px;width:80px;display:inline-block;vertical-align:middle">'+
+        '<div style="background:#1D4ED8;width:'+pct+'%;height:100%;border-radius:3px"></div></div> '+pct+'%</td></tr>';
+    }).join('')+
+    '</tbody></table>'+
+
+    '<div class="sec-title">Kişi Bazlı Performans</div>'+
+    '<table><thead><tr><th>Kişi</th><th>Departman</th><th>Toplam</th><th>Devam</th><th>Tamamlandı</th><th>Geciken</th><th>Tamamlanma %</th></tr></thead><tbody>'+
+    Object.keys(kisiMap).sort(function(a,b){return kisiMap[b].toplam-kisiMap[a].toplam;}).map(function(k){
+      var v=kisiMap[k];
+      var pct=Math.round(v.tamam/v.toplam*100);
+      return '<tr><td style="font-weight:600">'+esc(k)+'</td><td>'+esc(v.dept)+'</td><td>'+v.toplam+'</td><td>'+v.devam+'</td><td>'+v.tamam+'</td>'+
+        '<td style="color:'+(v.geciken?'#DC2626':'#9CA3AF')+'">'+v.geciken+'</td>'+
+        '<td><div style="background:#E5E7EB;border-radius:3px;height:6px;width:80px;display:inline-block;vertical-align:middle">'+
+        '<div style="background:#059669;width:'+pct+'%;height:100%;border-radius:3px"></div></div> '+pct+'%</td></tr>';
+    }).join('')+
+    '</tbody></table>'+
+
+    (gecikenler.length ? '<div class="sec-title">⚠ Geciken İşler</div>'+
+    '<table><thead><tr><th>Proje Adı</th><th>İş Tanımı</th><th>Departman</th><th>Sorumlu</th><th>Bitiş Tarihi</th></tr></thead><tbody>'+
+    gecikenler.map(function(r){
+      return '<tr><td style="font-weight:600">'+esc(r.projeAdi||'—')+'</td><td>'+esc(r.isTanimi||'—')+'</td><td>'+esc(r.departman||'—')+'</td><td>'+esc(r.sorumlu||'—')+'</td>'+
+        '<td style="color:#DC2626;font-weight:600">'+(r.bitisTarihi?fmtDate(r.bitisTarihi):'—')+'</td></tr>';
+    }).join('')+'</tbody></table>' : '')+
+
+    '<div class="sec-title">Tamamlanan İşler ('+donem+')</div>'+
+    '<table><thead><tr><th>Proje Adı</th><th>İş Tanımı</th><th>Departman</th><th>Sorumlu</th><th>Bitiş</th><th>Çalışma</th></tr></thead><tbody>'+
+    (tamamlananAy.length ? tamamlananAy.map(function(r){
+      return '<tr><td style="font-weight:600">'+esc(r.projeAdi||'—')+'</td><td>'+esc(r.isTanimi||'—')+'</td><td>'+esc(r.departman||'—')+'</td><td>'+esc(r.sorumlu||'—')+'</td>'+
+        '<td>'+(r.bitisTarihi?fmtDate(r.bitisTarihi):'—')+'</td><td>'+calcDays(r.bitisTarihi,r.baslangicTarihi)+'</td></tr>';
+    }).join('') : '<tr><td colspan="6" style="text-align:center;color:#9CA3AF;padding:12px">Bu ay tamamlanan iş yok</td></tr>')+
+    '</tbody></table>'+
+
+    '<div class="footer"><span>Smart Güneş Enerjisi Teknolojileri · İnşaat İşleri Takip Sistemi</span><span>'+tarih+' · '+donem+' Raporu</span></div>'+
+    '</body></html>';
+
+  // Yeni pencerede aç ve yazdır
+  var win = window.open('','_blank','width=900,height=1100');
+  win.document.write(html);
+  win.document.close();
+  win.onload = function(){
+    win.print();
+  };
+
+  // E-posta gönder
+  if(email){
+    showToast('E-posta gönderiliyor...');
+    // Geciken işler tablosu
+    var gecikenRows = gecikenler.map(function(r,i){
+      return '<tr style="background:'+(i%2===1?'#FFF5F5':'#fff')+'">'
+        +'<td style="padding:6px 10px;font-weight:600;color:#1A1A2E">'+esc(r.projeAdi||'—')+'</td>'
+        +'<td style="padding:6px 10px;color:#4B5563">'+esc(r.isTanimi||'—')+'</td>'
+        +'<td style="padding:6px 10px">'+esc(r.departman||'—')+'</td>'
+        +'<td style="padding:6px 10px">'+esc(r.sorumlu||'—')+'</td>'
+        +'<td style="padding:6px 10px;color:#DC2626;font-weight:600">'+(r.bitisTarihi?fmtDate(r.bitisTarihi):'—')+'</td>'
+        +'<td style="padding:6px 10px;color:#DC2626">'+calcDays(r.bitisTarihi,r.baslangicTarihi)+'</td>'
+      +'</tr>';
+    }).join('');
+
+    // Tamamlanan işler tablosu
+    var tamamRows = tamamlananAy.map(function(r,i){
+      return '<tr style="background:'+(i%2===1?'#F0FDF4':'#fff')+'">'
+        +'<td style="padding:6px 10px;font-weight:600;color:#1A1A2E">'+esc(r.projeAdi||'—')+'</td>'
+        +'<td style="padding:6px 10px;color:#4B5563">'+esc(r.isTanimi||'—')+'</td>'
+        +'<td style="padding:6px 10px">'+esc(r.departman||'—')+'</td>'
+        +'<td style="padding:6px 10px">'+esc(r.sorumlu||'—')+'</td>'
+        +'<td style="padding:6px 10px">'+(r.bitisTarihi?fmtDate(r.bitisTarihi):'—')+'</td>'
+        +'<td style="padding:6px 10px;color:#059669;font-weight:600">'+calcDays(r.bitisTarihi,r.baslangicTarihi)+'</td>'
+      +'</tr>';
+    }).join('');
+
+    var TH = 'style="background:#1E3250;color:#fff;padding:7px 10px;text-align:left;font-size:11px;font-weight:600"';
+    var secTitle = 'style="font-size:13px;font-weight:700;color:#1E3250;text-transform:uppercase;letter-spacing:.5px;border-bottom:3px solid #1E3250;padding-bottom:6px;margin:20px 0 10px"';
+
+    var mailHtml =
+      '<div style="font-family:Arial,sans-serif;max-width:750px;margin:0 auto;background:#fff">'+
+
+      // HEADER
+      '<div style="background:linear-gradient(135deg,#0F1923,#1E3250);color:#fff;padding:24px 28px;border-radius:10px 10px 0 0">'+
+        '<table style="width:100%;border-collapse:collapse"><tr>'+
+          '<td><div style="font-size:22px;font-weight:700;margin-bottom:4px">📊 Aylık Faaliyet Raporu</div>'+
+          '<div style="color:#8DA8C4;font-size:12px">Smart Güneş Enerjisi Teknolojileri · İnşaat İşleri Takip Sistemi</div></td>'+
+          '<td style="text-align:right"><div style="font-size:26px;font-weight:700">'+donem+'</div>'+
+          '<div style="color:#8DA8C4;font-size:11px">'+kapsam+'</div>'+
+          '<div style="color:#8DA8C4;font-size:10px;margin-top:2px">'+tarih+'</div></td>'+
+        '</tr></table>'+
+      '</div>'+
+
+      // KPI
+      '<div style="background:#F8FAFC;padding:16px 20px;border-bottom:1px solid #E5E7EB">'+
+        '<table style="width:100%;border-collapse:collapse"><tr>'+
+          '<td style="text-align:center;padding:8px"><div style="background:#DBEAFE;border-radius:8px;padding:12px 8px"><div style="font-size:28px;font-weight:700;color:#1D4ED8">'+toplam+'</div><div style="font-size:10px;color:#1D4ED8;text-transform:uppercase;font-weight:600;margin-top:2px">Toplam İş</div></div></td>'+
+          '<td style="text-align:center;padding:8px"><div style="background:#D1FAE5;border-radius:8px;padding:12px 8px"><div style="font-size:28px;font-weight:700;color:#059669">'+devam+'</div><div style="font-size:10px;color:#059669;text-transform:uppercase;font-weight:600;margin-top:2px">Devam Eden</div></div></td>'+
+          '<td style="text-align:center;padding:8px"><div style="background:#FEF3C7;border-radius:8px;padding:12px 8px"><div style="font-size:28px;font-weight:700;color:#D97706">'+bekliyor+'</div><div style="font-size:10px;color:#D97706;text-transform:uppercase;font-weight:600;margin-top:2px">Bekliyor</div></div></td>'+
+          '<td style="text-align:center;padding:8px"><div style="background:#DBEAFE;border-radius:8px;padding:12px 8px"><div style="font-size:28px;font-weight:700;color:#2563EB">'+tamam+'</div><div style="font-size:10px;color:#2563EB;text-transform:uppercase;font-weight:600;margin-top:2px">Tamamlandı</div></div></td>'+
+          '<td style="text-align:center;padding:8px"><div style="background:#FEE2E2;border-radius:8px;padding:12px 8px"><div style="font-size:28px;font-weight:700;color:#DC2626">'+geciken+'</div><div style="font-size:10px;color:#DC2626;text-transform:uppercase;font-weight:600;margin-top:2px">Geciken</div></div></td>'+
+          '<td style="text-align:center;padding:8px"><div style="background:#F3F4F6;border-radius:8px;padding:12px 8px"><div style="font-size:28px;font-weight:700;color:#6B7280">'+iptal+'</div><div style="font-size:10px;color:#6B7280;text-transform:uppercase;font-weight:600;margin-top:2px">İptal</div></div></td>'+
+        '</tr></table>'+
+      '</div>'+
+
+      '<div style="padding:20px 24px">'+
+
+      // DEPARTMAN
+      '<div '+secTitle+'>Departman Bazlı Özet</div>'+
+      '<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:4px">'+
+        '<thead><tr><th '+TH+'>Departman</th><th '+TH+' style="text-align:center">Toplam</th><th '+TH+' style="text-align:center">Devam</th><th '+TH+' style="text-align:center">Bekliyor</th><th '+TH+' style="text-align:center">Tamamlandı</th><th '+TH+' style="text-align:center">Geciken</th><th '+TH+' style="text-align:center">Tamamlanma %</th></tr></thead>'+
+        '<tbody>'+Object.keys(deptMap).map(function(d,i){
+          var v=deptMap[d];var pct=Math.round(v.tamam/v.toplam*100);
+          return '<tr style="background:'+(i%2===1?'#F9FAFB':'#fff')+'"><td style="padding:7px 10px;font-weight:600;border-bottom:1px solid #EEF2FF">'+d+'</td>'+
+            '<td style="padding:7px 10px;text-align:center;border-bottom:1px solid #EEF2FF;font-weight:600;color:#1D4ED8">'+v.toplam+'</td>'+
+            '<td style="padding:7px 10px;text-align:center;border-bottom:1px solid #EEF2FF;color:#059669">'+v.devam+'</td>'+
+            '<td style="padding:7px 10px;text-align:center;border-bottom:1px solid #EEF2FF;color:#D97706">'+v.bekliyor+'</td>'+
+            '<td style="padding:7px 10px;text-align:center;border-bottom:1px solid #EEF2FF;color:#2563EB">'+v.tamam+'</td>'+
+            '<td style="padding:7px 10px;text-align:center;border-bottom:1px solid #EEF2FF;color:'+(v.geciken?'#DC2626':'#9CA3AF')+'">'+v.geciken+'</td>'+
+            '<td style="padding:7px 10px;text-align:center;border-bottom:1px solid #EEF2FF;font-weight:600">'+pct+'%</td></tr>';
+        }).join('')+'</tbody>'+
+      '</table>'+
+
+      // KİŞİ
+      '<div '+secTitle+'>Kişi Bazlı Performans</div>'+
+      '<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:4px">'+
+        '<thead><tr><th '+TH+'>Kişi</th><th '+TH+'>Departman</th><th '+TH+' style="text-align:center">Toplam</th><th '+TH+' style="text-align:center">Devam</th><th '+TH+' style="text-align:center">Tamamlandı</th><th '+TH+' style="text-align:center">Geciken</th><th '+TH+' style="text-align:center">Tamamlanma %</th></tr></thead>'+
+        '<tbody>'+Object.keys(kisiMap).sort(function(a,b){return kisiMap[b].toplam-kisiMap[a].toplam;}).map(function(k,i){
+          var v=kisiMap[k];var pct=Math.round(v.tamam/v.toplam*100);
+          return '<tr style="background:'+(i%2===1?'#F9FAFB':'#fff')+'"><td style="padding:7px 10px;font-weight:600;border-bottom:1px solid #EEF2FF">'+k+'</td>'+
+            '<td style="padding:7px 10px;border-bottom:1px solid #EEF2FF;color:#6B7280">'+v.dept+'</td>'+
+            '<td style="padding:7px 10px;text-align:center;border-bottom:1px solid #EEF2FF;font-weight:600;color:#1D4ED8">'+v.toplam+'</td>'+
+            '<td style="padding:7px 10px;text-align:center;border-bottom:1px solid #EEF2FF;color:#059669">'+v.devam+'</td>'+
+            '<td style="padding:7px 10px;text-align:center;border-bottom:1px solid #EEF2FF;color:#2563EB">'+v.tamam+'</td>'+
+            '<td style="padding:7px 10px;text-align:center;border-bottom:1px solid #EEF2FF;color:'+(v.geciken?'#DC2626':'#9CA3AF')+'">'+v.geciken+'</td>'+
+            '<td style="padding:7px 10px;text-align:center;border-bottom:1px solid #EEF2FF;font-weight:600">'+pct+'%</td></tr>';
+        }).join('')+'</tbody>'+
+      '</table>'+
+
+      // GECİKEN İŞLER
+      (gecikenler.length ?
+        '<div '+secTitle+' style="color:#DC2626;border-bottom-color:#DC2626">⚠ Geciken İşler ('+gecikenler.length+')</div>'+
+        '<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:4px">'+
+          '<thead><tr><th '+TH+'>Proje Adı</th><th '+TH+'>İş Tanımı</th><th '+TH+'>Departman</th><th '+TH+'>Sorumlu</th><th '+TH+'>Bitiş Tarihi</th><th '+TH+'>Gecikme</th></tr></thead>'+
+          '<tbody>'+gecikenRows+'</tbody>'+
+        '</table>' : '')+
+
+      // TAMAMLANAN İŞLER
+      '<div '+secTitle+' style="color:#059669;border-bottom-color:#059669">✅ Tamamlanan İşler ('+tamamlananAy.length+')</div>'+
+      (tamamlananAy.length ?
+        '<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:4px">'+
+          '<thead><tr><th '+TH+'>Proje Adı</th><th '+TH+'>İş Tanımı</th><th '+TH+'>Departman</th><th '+TH+'>Sorumlu</th><th '+TH+'>Bitiş</th><th '+TH+'>Çalışma Süresi</th></tr></thead>'+
+          '<tbody>'+tamamRows+'</tbody>'+
+        '</table>' :
+        '<p style="color:#9CA3AF;font-size:12px;text-align:center;padding:16px">Bu dönemde tamamlanan iş bulunmuyor.</p>')+
+
+      '</div>'+
+
+      // FOOTER
+      '<div style="background:#1E3250;padding:14px 24px;border-radius:0 0 10px 10px;text-align:center">'+
+        '<div style="color:#8DA8C4;font-size:10px">Smart Güneş Enerjisi Teknolojileri · İnşaat İşleri Takip Sistemi</div>'+
+        '<div style="color:#5A7A9A;font-size:9px;margin-top:3px">'+donem+' Aylık Faaliyet Raporu · '+tarih+'</div>'+
+      '</div>'+
+      '</div>';
+
+    emailjs.send('service_wzfp1ks', 'template_uqab3wn', {
+      to_email: email,
+      donem: donem,
+      kapsam: kapsam,
+      toplam: String(toplam),
+      tamamlanan: String(tamam),
+      devam: String(devam),
+      geciken: String(geciken),
+      rapor_html: mailHtml
+    }).then(function(){
+      showToast('Rapor e-posta ile gönderildi ✓');
+    }).catch(function(e){
+      showToast('⚠ E-posta gönderilemedi: ' + (e.text||e.message||'Hata'));
+    });
+  }
+
+  document.getElementById('aylikRaporModal').remove();
+  showToast('Rapor oluşturuldu ✓');
+}
+
+
+// ── İŞ EMRİ ──────────────────────────────────────
+function openIsEmriModal(){
+  // Veriliş tarihini bugün yap
+  var today = new Date().toISOString().split('T')[0];
+  document.getElementById('ie_gelisTarihi').value = today;
+  // Formu sıfırla
+  ['ie_projeTalebi','ie_projeAdi','ie_departman','ie_talepSebebi','ie_dosyaLink','ie_notlar','ie_bitisTarihi'].forEach(function(id){
+    var el = document.getElementById(id);
+    if(el) el.value = '';
+  });
+  document.getElementById('ie_sorumlu').innerHTML = '<option value="">— Önce departman seçin —</option>';
+  document.getElementById('ie_onaylayan').innerHTML = '<option value="">— Önce departman seçin —</option>';
+  document.getElementById('ie_isTanimi').innerHTML = '<option value="">— Önce departman seçin —</option>';
+  document.getElementById('ie_isTanimi').disabled = true;
+  document.getElementById('isEmriSaveBtn').disabled = true;
+  document.getElementById('isEmriSaveBtn').style.opacity = '.4';
+
+  var modalEl = document.getElementById('isEmriModal');
+  if(modalEl){
+    modalEl.style.left = '50%';
+    modalEl.style.top = '50%';
+    modalEl.style.transform = 'translate(-50%,-50%)';
+    modalEl.style.visibility = 'hidden';
+  }
+  document.getElementById('isEmriOverlay').classList.add('open');
+  requestAnimationFrame(function(){
+    requestAnimationFrame(function(){
+      if(modalEl){
+        modalEl.style.visibility = 'visible';
+        var head = document.getElementById('isEmriHead');
+        if(head && !head._draggable){
+          makeDraggable(modalEl, head);
+          head._draggable = true;
+        }
+      }
+    });
+  });
+}
+
+function closeIsEmriModal(){
+  document.getElementById('isEmriOverlay').classList.remove('open');
+  var min = document.getElementById('isEmriMinimized');
+  if(min) min.style.display = 'none';
+}
+
+function minimizeIsEmri(){
+  document.getElementById('isEmriOverlay').classList.remove('open');
+  document.getElementById('isEmriMinimized').style.display = 'flex';
+}
+
+function restoreIsEmri(){
+  document.getElementById('isEmriMinimized').style.display = 'none';
+  document.getElementById('isEmriOverlay').classList.add('open');
+}
+
+function onIsEmriDeptChange(){
+  var dept = document.getElementById('ie_departman').value;
+  var sorSel = document.getElementById('ie_sorumlu');
+  var onaySel = document.getElementById('ie_onaylayan');
+  var isSel = document.getElementById('ie_isTanimi');
+
+  if(!dept){ return; }
+
+  // Sorumlu listesi
+  var kisiler = SORUMLULAR[dept]||[];
+  sorSel.innerHTML = '<option value="">— Seçiniz —</option>' +
+    kisiler.map(function(k){ return '<option value="'+k+'">'+k+'</option>'; }).join('');
+
+  // Onaylayan listesi
+  var onaylayanlar = ONAYLAYANLAR[dept]||[];
+  onaySel.innerHTML = '<option value="">— Seçiniz —</option>' +
+    onaylayanlar.map(function(k){ return '<option value="'+k+'">'+k+'</option>'; }).join('');
+
+  // İş tanımı
+  var lst = IS_TANIMLARI[dept]||[];
+  var yeniOpt = currentUser ? '<option value="__yeni__">➕ Yeni İş Tanımı Ekle...</option>' : '';
+  isSel.innerHTML = '<option value="">— Seçiniz —</option>' +
+    lst.map(function(t){ return '<option value="'+t+'">'+t+'</option>'; }).join('') + yeniOpt;
+  isSel.disabled = false;
+
+  // Kendi departmanı ise kendini seç
+  if(currentUser && currentUser.dept===dept && kisiler.indexOf(currentUser.ad)!==-1){
+    sorSel.value = currentUser.ad;
+  }
+}
+
+function checkIsEmriValid(){
+  var ok = document.getElementById('ie_projeTalebi').value &&
+    document.getElementById('ie_projeAdi').value.trim() &&
+    document.getElementById('ie_departman').value &&
+    document.getElementById('ie_sorumlu').value &&
+    document.getElementById('ie_onaylayan').value &&
+    document.getElementById('ie_isTanimi').value &&
+    document.getElementById('ie_talepSebebi').value.trim();
+  var btn = document.getElementById('isEmriSaveBtn');
+  btn.disabled = !ok;
+  btn.style.opacity = ok ? '1' : '.4';
+  btn.style.cursor = ok ? 'pointer' : 'not-allowed';
+}
+
+function showIsEmriAutocomplete(){
+  var input = document.getElementById('ie_projeAdi');
+  var list = document.getElementById('isEmriAutocomplete');
+  if(!input||!list) return;
+  var q = input.value.toLowerCase().trim();
+  var filtered = (window._projeler||[]).filter(function(p){
+    return !q || p.ad.toLowerCase().indexOf(q)!==-1;
+  });
+  if(!filtered.length){ list.classList.remove('open'); return; }
+  list.innerHTML = filtered.map(function(p){
+    return '<div class="autocomplete-item" data-ad="'+esc(p.ad)+'"><span>'+esc(p.ad)+'</span></div>';
+  }).join('');
+  list.classList.add('open');
+  list.onclick = function(e){
+    var item = e.target.closest('.autocomplete-item');
+    if(!item) return;
+    input.value = item.getAttribute('data-ad');
+    list.classList.remove('open');
+    checkIsEmriValid();
+  };
+}
+
+function saveIsEmri(){
+  if(!currentUser){ showToast('⚠ Giriş yapmanız gerekiyor'); return; }
+
+  var dept = document.getElementById('ie_departman').value;
+  var it = document.getElementById('ie_isTanimi').value;
+
+  var obj = {
+    id: genId(),
+    projeTalebi: document.getElementById('ie_projeTalebi').value,
+    projeAdi: document.getElementById('ie_projeAdi').value.trim(),
+    departman: dept,
+    oncelik: document.getElementById('ie_oncelik').value,
+    sorumlu: document.getElementById('ie_sorumlu').value,
+    onaylayan: document.getElementById('ie_onaylayan').value,
+    isTanimi: it==='__yeni__' ? '' : it,
+    talepSebebi: document.getElementById('ie_talepSebebi').value.trim(),
+    dosyaLink: document.getElementById('ie_dosyaLink').value.trim(),
+    gelisTarihi: document.getElementById('ie_gelisTarihi').value,
+    bitisTarihi: document.getElementById('ie_bitisTarihi').value,
+    notlar: document.getElementById('ie_notlar').value.trim(),
+    durum: 'Bekliyor',
+    ekleyen: currentUser.id,
+    isEmri: true,
+    isEmriVeren: currentUser.ad,
+    zaman: Date.now()
+  };
+
+  if(!window._fbSave){ showToast('⚠ Firebase bağlı değil'); return; }
+  window._fbSave(obj).then(function(){
+    // Sorumluya bildirim gönder
+    var hedef = KULLANICILAR.find(function(u){ return u.ad===obj.sorumlu && u.id!==currentUser.id; });
+    if(hedef && window._fbSaveNotif){
+      window._fbSaveNotif({
+        id: genId(),
+        gonderen: currentUser.id,
+        hedef: hedef.id,
+        tip: 'isemri',
+        projeAdi: obj.projeAdi,
+        kayitId: obj.id,
+        mesaj: obj.talepSebebi.slice(0,60),
+        zaman: Date.now(),
+        okundu: false
+      });
+    }
+    closeIsEmriModal();
+    showToast('İş emri oluşturuldu ve bildirim gönderildi ✓');
+  }).catch(function(e){ showToast('⚠ Hata: '+e.message); });
 }
 
 function showToast(msg){
