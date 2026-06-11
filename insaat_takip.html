@@ -457,6 +457,9 @@ function initFirebase() {
   window._fbSave = function(record) {
     return db.collection('isler').doc(record.id).set(record);
   };
+  window._fbSaveIsEmri = function(obj) {
+    return db.collection('isEmirleri').doc(obj.id).set(obj);
+  };
   window._fbDelete = function(id) {
     return db.collection('isler').doc(id).delete();
   };
@@ -496,6 +499,12 @@ function initFirebase() {
     return db.collection('projeler').doc(id).delete();
   };
   // Projeleri gerçek zamanlı dinle
+  db.collection('isEmirleri').orderBy('zaman','desc').onSnapshot(function(snap){
+    isEmirleri=[];
+    snap.forEach(function(d){isEmirleri.push(d.data());});
+    ieListeGuncelle();
+    if(typeof activeTab!=='undefined'&&activeTab==='tab-isemirleri')renderIsEmirleri();
+  });
   db.collection('isEmirleri').orderBy('zaman','desc').onSnapshot(function(snap){
     isEmirleri=[];
     snap.forEach(function(d){isEmirleri.push(d.data());});
