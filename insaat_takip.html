@@ -514,6 +514,18 @@ function initFirebase() {
     ieListeGuncelle();
     if(typeof activeTab!=='undefined'&&activeTab==='tab-isemirleri')renderIsEmirleri();
   });
+  // İş tanımlarını Firebase'den oku
+  db.collection('isTanimlari').get().then(function(snap){
+    snap.forEach(function(d){
+      var data = d.data();
+      if(data.dept && data.tanim && IS_TANIMLARI[data.dept]){
+        if(IS_TANIMLARI[data.dept].indexOf(data.tanim)===-1){
+          IS_TANIMLARI[data.dept].push(data.tanim);
+        }
+      }
+    });
+  });
+
   db.collection('projeler').orderBy('ad','asc').onSnapshot(function(snap){
     window._projeler = [];
     snap.forEach(function(d){ window._projeler.push(d.data()); });
@@ -1178,7 +1190,7 @@ function fmtDate(d){ if(!d) return '—'; var p=d.split('-'); return p[2]+'.'+p[
 function isOD(r){ return r.bitisTarihi && r.durum!=='Tamamlandı' && r.durum!=='İptal' && new Date(r.bitisTarihi)<new Date(); }
 
 var IS_TANIMLARI={
-  'İnşaat':['İnşaat İşleri Metraj Hesabı (Çelik, Yol, Drenaj, Telçit vb.)','Drenaj Projesi','TM Betonarme Projesi','DM Betonarme Projesi','Telçit Paftası','Sabit Sistem Çelik Konstrüksiyon Hesabı','Sabit Sistem Çelik Konstrüksiyon Çizimi','Sabit Sistem Çelik Konstrüksiyon Raporu','Carport Hesabı','Çelik Sevk Takibi','Dolguya Uygunluk Kontrolü','Çelik Konstrüksiyon Proje','Betonarme Statik Proje','İş Makinesi Fiyat Alma','Yakıt Fiyat Araştırması'],
+  'İnşaat':['İnşaat İşleri Metraj Hesabı (Çelik, Yol, Drenaj, Telçit vb.)','Drenaj Projesi','TM Betonarme Projesi','DM Betonarme Projesi','Telçit Paftası','Sabit Sistem Çelik Konstrüksiyon Hesabı','Sabit Sistem Çelik Konstrüksiyon Çizimi','Sabit Sistem Çelik Konstrüksiyon Raporu','Carport Hesabı','Çelik Sevk Takibi','Dolguya Uygunluk Kontrolü','Çelik Konstrüksiyon Proje','Betonarme Statik Proje','İş Makinesi Teklif Toplama','Yakıt Fiyat Araştırması'],
   'Mekanik':['Tracker Sistem Çelik Konstrüksiyon Hesabı','Tracker Sistem Çelik Konstrüksiyon Çizimi','Tracker Sistem Çelik Konstrüksiyon Raporu','Telçit ve Kapı Detay Projesi','İnverter Support Projesi','Carport Çelik Hesabı','Çatı GES Konstrüksiyon','Prosedür ve Manuel Hazırlanması','Çakma-Çekme Testi','FAT','Tracker Devreye Alma','Satın Alma Öncesi Component Seçimi'],
   'Harita':['Tesviye Projesi (Panel Altı)','Yol Projesi','Tesviye ve Yol Projesi','Drenaj Projesi','Halihazır Harita Üretimi','Aplikasyon Elemanlarının Sayısallaştırılması']
 };
@@ -1658,10 +1670,14 @@ function checkFormValid(){
     var manuelVal = (document.getElementById('f_isTanimiManuel').value||'').trim();
     if(!manuelVal){ showToast('⚠ İş tanımı girin'); return; }
     it = manuelVal;
-    // Listeye kalıcı ekle
+    // Listeye kalıcı ekle — hafızaya ve Firebase'e
     var dept2 = document.getElementById('f_departman').value;
     if(dept2 && IS_TANIMLARI[dept2] && IS_TANIMLARI[dept2].indexOf(manuelVal)===-1){
       IS_TANIMLARI[dept2].push(manuelVal);
+      // Firebase'e kaydet
+      if(db) db.collection('isTanimlari').doc(dept2+'_'+manuelVal.replace(/[^a-zA-Z0-9]/g,'_')).set({
+        dept: dept2, tanim: manuelVal, ekleyen: currentUser?currentUser.id:'', zaman: Date.now()
+      });
     }
   }
   var oy = document.getElementById('f_onaylayan').value;
