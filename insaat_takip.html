@@ -3333,7 +3333,13 @@ function notifClick(el) {
   if(!n) return;
   // Paneli kapat
   toggleNotifPanel();
-  // Kaydı bul — önce kayitId, sonra projeAdi ile
+  // İş emri bildirimi ise — isEmirleri listesinde ara
+  if(n.tip==='isemri' || n.tip==='isemri_kabul' || n.tip==='isemri_red') {
+    var ie = (typeof isEmirleri!=='undefined' ? isEmirleri : []).find(function(x){ return x.id===n.kayitId; });
+    if(ie){ iePanelAc(ie.id); return; }
+    showToast('İş emri bulunamadı'); return;
+  }
+  // Normal kayıt — records'ta ara
   var r = records.find(function(x){ return x.id === n.kayitId; });
   if(!r) r = records.find(function(x){ return x.projeAdi === n.projeAdi || x.isTanimi === n.projeAdi; });
   if(!r) { showToast('Kayıt bulunamadı'); return; }
