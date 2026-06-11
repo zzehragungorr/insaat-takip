@@ -460,6 +460,9 @@ function initFirebase() {
   window._fbSaveIsEmri = function(obj) {
     return db.collection('isEmirleri').doc(obj.id).set(obj);
   };
+  window._fbDeleteIsEmri = function(id) {
+    return db.collection('isEmirleri').doc(id).delete();
+  };
   window._fbDelete = function(id) {
     return db.collection('isler').doc(id).delete();
   };
@@ -5386,10 +5389,14 @@ function ieRedGonder(id) {
 
 function ieGeriAl(id) {
   if (!confirm('Bu iş emrini silmek istediğinize emin misiniz?')) return;
-  db.collection('isEmirleri').doc(id).delete().then(function() {
+  // Önce window._fbDeleteIsEmri, yoksa direkt db
+  var delFn = window._fbDeleteIsEmri || function(docId){
+    return db.collection('isEmirleri').doc(docId).delete();
+  };
+  delFn(id).then(function() {
     iePanelKapat();
     showToast('İş emri silindi.');
-  }).catch(function(e){ showToast('Hata: ' + e.message); });
+  }).catch(function(e){ showToast('Hata: ' + (e.message||e)); });
 }
 
 function ieListeGuncelle() {
