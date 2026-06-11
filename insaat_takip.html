@@ -518,6 +518,7 @@ function initFirebase() {
     snap.forEach(function(d){ window._projeler.push(d.data()); });
     if(activeTab==='tab-kutuphane') renderKutuphaneTab();
     var nbK = document.getElementById('nb_kutuphane'); if(nbK) nbK.textContent = window._projeler.length;
+    if(activeTab==='tab-isemirleri') renderIsEmirleri();
   });
   window._fbDeleteYorum = function(id) {
     return db.collection('yorumlar').doc(id).delete();
@@ -631,6 +632,10 @@ loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js', f
     <button class="nav-item" id="nav-myworks" onclick="switchTabById('tab-myworks')">
       <svg class="nav-svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="5" r="3"/><path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/></svg>
       İşlerim <span class="nav-badge" id="nb_myworks">0</span>
+    </button>
+    <button class="nav-item" id="nav-isemirleri" onclick="switchTabById('tab-isemirleri')">
+      <svg class="nav-svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="3" rx="1"/><line x1="2" y1="8" x2="10" y2="8"/><line x1="2" y1="11" x2="8" y2="11"/><polyline points="11,10 13,12 15,9"/></svg>
+      İş Emirlerim <span class="nav-badge" id="nb_isemirleri" style="background:#7C3AED">0</span>
     </button>
     <button class="nav-item" id="nav-archive" onclick="switchTabById('tab-archive')">
       <svg class="nav-svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3" width="14" height="3" rx="1"/><path d="M2 6v7a1 1 0 001 1h10a1 1 0 001-1V6"/><line x1="6" y1="9" x2="10" y2="9"/></svg>
@@ -821,6 +826,18 @@ loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js', f
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;box-shadow:var(--sh)">
       <div id="kutuphaneTabList" style="padding:8px 0"></div>
     </div>
+  </div>
+
+  <!-- TAB: İŞ EMİRLERİM -->
+  <div class="tab-content" id="tab-isemirleri">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div>
+        <div style="font-size:15px;font-weight:600;color:var(--text)">📋 Verdiğim İş Emirleri</div>
+        <div style="font-size:11px;color:var(--text3)" id="isemirleriSub">—</div>
+      </div>
+    </div>
+    <div id="isemirleriStats" style="display:flex;gap:8px;margin-bottom:14px"></div>
+    <div id="isemirleriList" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;box-shadow:var(--sh)"></div>
   </div>
 
   <!-- TAB: ARŞİV -->
@@ -1481,11 +1498,15 @@ function getFiltered(){
 
 function updateMyworksBadge(){
   var nbMy = document.getElementById('nb_myworks');
-  if(!nbMy) return;
-  if(!currentUser){ nbMy.textContent = ''; return; }
-  nbMy.textContent = records.filter(function(r){
-    return (r.sorumlu||'').trim() === currentUser.ad.trim();
-  }).length;
+  if(nbMy){
+    if(!currentUser){ nbMy.textContent = ''; }
+    else { nbMy.textContent = records.filter(function(r){ return (r.sorumlu||'').trim()===currentUser.ad.trim(); }).length; }
+  }
+  var nbIe = document.getElementById('nb_isemirleri');
+  if(nbIe){
+    if(!currentUser){ nbIe.textContent = ''; }
+    else { nbIe.textContent = records.filter(function(r){ return r.isEmri && (r.isEmriVerenId===currentUser.id || r.isEmriVeren===currentUser.ad); }).length; }
+  }
 }
 
 function renderAll(){
@@ -2248,7 +2269,7 @@ function setView(view,el){
   document.getElementById('breadSub').textContent=subs[view]||'';
   document.getElementById('tableToolbarTitle').textContent=titles[view]||view;
   // Arşiv, İşlerim, Kütüphane için iş listesine geç
-  if(activeTab==='tab-archive' || activeTab==='tab-myworks' || activeTab==='tab-kutuphane'){
+  if(activeTab==='tab-archive' || activeTab==='tab-myworks' || activeTab==='tab-kutuphane' || activeTab==='tab-isemirleri'){
     var tabBtn = document.getElementById('tab-btn-list');
     switchTab('tab-list', tabBtn||null);
   } else if(activeTab==='tab-list') {
@@ -2282,6 +2303,9 @@ function switchTab(tabId,el){
   } else if(tabId==='tab-kutuphane'){
     if(_fs) _fs.style.display='none';
     renderKutuphaneTab();
+  } else if(tabId==='tab-isemirleri'){
+    if(_fs) _fs.style.display='none';
+    renderIsEmirleri();
   } else {
     if(_fs) _fs.style.display='';
     renderFilters();
@@ -5156,7 +5180,16 @@ function openIePanel(rid){
 
   // Aksiyon butonları
   var actions='';
-  var canAct = currentUser && (r.sorumlu===currentUser.ad);
+  // Sorumlu kontrolü — ad, id veya username ile eşleş
+  var canAct = false;
+  if(currentUser && r.isEmriVerenId !== currentUser.id){
+    var sorumluUser = KULLANICILAR.find(function(u){
+      return u.ad === (r.sorumlu||'').trim();
+    });
+    canAct = sorumluUser ? sorumluUser.id === currentUser.id : 
+             (r.sorumlu||'').trim() === currentUser.ad.trim();
+  }
+
   var isVeren = currentUser && r.isEmriVerenId===currentUser.id;
 
   if(canAct && r.isEmriDurum===IE_DURUM.BEKLEMEDE){
@@ -5170,6 +5203,11 @@ function openIePanel(rid){
   if((canAct||isVeren) && r.isEmriDurum===IE_DURUM.KABUL){
     actions+='<button class="ie-action-btn" style="background:#7C3AED;color:#fff;flex:1" data-xid="'+r.id+'" onclick="isEmriniIseCevir(this.dataset.xid)">📋 İş Listesine Taşı</button>';
   }
+  // Düzenle butonu — veren veya sorumlu görebilir, sadece Beklemede/Kabul durumunda
+  if((canAct||isVeren) && r.isEmriDurum!==IE_DURUM.TAMAMLANDI){
+    actions+='<button class="ie-action-btn" style="background:var(--surface3);color:var(--text);border:1px solid var(--border)" data-xid="'+r.id+'" onclick="openIeEditPanel(this.dataset.xid)">✏ Düzenle</button>';
+  }
+
   if(!actions) actions='<div style="color:var(--text3);font-size:12px;text-align:center;width:100%">'+esc(r.isEmriDurum||'Beklemede')+'</div>';
   document.getElementById('iePanelActions').innerHTML=actions;
 
@@ -5260,6 +5298,166 @@ function isEmriniIseCevir(rid){
     closeIePanel();
     renderTable();
   });
+}
+
+
+function openIeEditPanel(rid){
+  var r = records.find(function(x){ return x.id===rid; });
+  if(!r) return;
+
+  document.getElementById('iePanelBody').innerHTML =
+    '<div style="display:flex;flex-direction:column;gap:12px">'+
+
+    '<div class="form-group">'+
+      '<label style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Proje Adı</label>'+
+      '<input type="text" id="ie_edit_projeAdi" value="'+esc(r.projeAdi||'')+'" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none">'+
+    '</div>'+
+
+    '<div class="form-group">'+
+      '<label style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">İş Tanımı</label>'+
+      '<input type="text" id="ie_edit_isTanimi" value="'+esc(r.isTanimi||'')+'" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none">'+
+    '</div>'+
+
+    '<div class="form-group">'+
+      '<label style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Talep Sebebi</label>'+
+      '<textarea id="ie_edit_talepSebebi" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;min-height:70px;resize:vertical">'+esc(r.talepSebebi||'')+'</textarea>'+
+    '</div>'+
+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'+
+      '<div>'+
+        '<label style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Öncelik</label>'+
+        '<select id="ie_edit_oncelik" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none">'+
+          ['Orta','Düşük','Yüksek','Kritik'].map(function(o){
+            return '<option value="'+o+'"'+(r.oncelik===o?' selected':'')+'>'+o+'</option>';
+          }).join('')+
+        '</select>'+
+      '</div>'+
+      '<div>'+
+        '<label style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">İstenen Bitiş</label>'+
+        '<input type="date" id="ie_edit_bitisTarihi" value="'+(r.bitisTarihi||'')+'" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none">'+
+      '</div>'+
+    '</div>'+
+
+    '<div>'+
+      '<label style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Dosya Linki</label>'+
+      '<input type="url" id="ie_edit_dosyaLink" value="'+esc(r.dosyaLink||'')+'" placeholder="https://..." style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none">'+
+    '</div>'+
+
+    '<div>'+
+      '<label style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Ek Notlar</label>'+
+      '<textarea id="ie_edit_notlar" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;min-height:56px;resize:vertical">'+esc(r.notlar||'')+'</textarea>'+
+    '</div>'+
+    '</div>';
+
+  document.getElementById('iePanelActions').innerHTML =
+    '<button class="ie-action-btn" style="background:var(--surface3);color:var(--text);border:1px solid var(--border);flex:1" data-xid="'+rid+'" onclick="openIePanel(this.dataset.xid)">← Geri</button>'+
+    '<button class="ie-action-btn" style="background:linear-gradient(135deg,#4C1D95,#7C3AED);color:#fff;flex:1" data-xid="'+rid+'" onclick="saveIeEdit(this.dataset.xid)">✓ Kaydet</button>';
+}
+
+function saveIeEdit(rid){
+  var r = records.find(function(x){ return x.id===rid; });
+  if(!r) return;
+
+  r.projeAdi   = document.getElementById('ie_edit_projeAdi').value.trim() || r.projeAdi;
+  r.isTanimi   = document.getElementById('ie_edit_isTanimi').value.trim() || r.isTanimi;
+  r.talepSebebi= document.getElementById('ie_edit_talepSebebi').value.trim() || r.talepSebebi;
+  r.oncelik    = document.getElementById('ie_edit_oncelik').value || r.oncelik;
+  r.bitisTarihi= document.getElementById('ie_edit_bitisTarihi').value || r.bitisTarihi;
+  r.dosyaLink  = document.getElementById('ie_edit_dosyaLink').value.trim();
+  r.notlar     = document.getElementById('ie_edit_notlar').value.trim();
+
+  if(!window._fbSave){ showToast('⚠ Firebase bağlı değil'); return; }
+  window._fbSave(r).then(function(){
+    showToast('İş emri güncellendi ✓');
+    openIePanel(rid);
+  }).catch(function(e){ showToast('⚠ Hata: '+e.message); });
+}
+
+
+var _isemirleriFilter = null;
+
+function renderIsEmirleri(){
+  if(!currentUser) return;
+  var emirler = records.filter(function(r){ return r.isEmri && (r.isEmriVerenId===currentUser.id || r.isEmriVeren===currentUser.ad); });
+
+  // Badge güncelle
+  var nb = document.getElementById('nb_isemirleri');
+  if(nb) nb.textContent = emirler.length;
+
+  var sub = document.getElementById('isemirleriSub');
+  if(sub) sub.textContent = emirler.length + ' iş emri';
+
+  // Filtre uygula
+  var filtered = _isemirleriFilter ? emirler.filter(function(r){ return r.isEmriDurum===_isemirleriFilter; }) : emirler;
+
+  // Stats
+  var beklemede = emirler.filter(function(r){ return r.isEmriDurum===IE_DURUM.BEKLEMEDE; }).length;
+  var kabul = emirler.filter(function(r){ return r.isEmriDurum===IE_DURUM.KABUL; }).length;
+  var red = emirler.filter(function(r){ return r.isEmriDurum===IE_DURUM.REDDEDILDI; }).length;
+  var tamam = emirler.filter(function(r){ return r.isEmriDurum===IE_DURUM.TAMAMLANDI; }).length;
+
+  var statsDiv = document.getElementById('isemirleriStats');
+  if(statsDiv){
+    statsDiv.innerHTML =
+      mkIeStatCard(emirler.length, 'Tümü',      '#1D4ED8','#DBEAFE', null)+
+      mkIeStatCard(beklemede,     'Beklemede',  '#D97706','#FEF3C7', IE_DURUM.BEKLEMEDE)+
+      mkIeStatCard(kabul,         'Kabul',      '#059669','#D1FAE5', IE_DURUM.KABUL)+
+      mkIeStatCard(red,           'Reddedildi', '#DC2626','#FEE2E2', IE_DURUM.REDDEDILDI)+
+      mkIeStatCard(tamam,         'Tamamlandı', '#7C3AED','#EDE9FE', IE_DURUM.TAMAMLANDI);
+    statsDiv.querySelectorAll('[data-ief]').forEach(function(el){
+      el.onclick = function(){
+        _isemirleriFilter = el.getAttribute('data-ief') || null;
+        renderIsEmirleri();
+      };
+    });
+  }
+
+  var list = document.getElementById('isemirleriList');
+  if(!list) return;
+
+  if(!filtered.length){
+    list.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3)">'+
+      (_isemirleriFilter ? 'Bu durumda iş emri yok' : 'Henüz iş emri vermediniz')+'</div>';
+    return;
+  }
+
+  var durumRenk={'Beklemede':['#FEF3C7','#D97706'],'Kabul Edildi':['#D1FAE5','#059669'],'Reddedildi':['#FEE2E2','#DC2626'],'Tamamlandı':['#EDE9FE','#7C3AED']};
+
+  list.innerHTML = '<table style="width:100%;border-collapse:collapse">'+
+    '<thead><tr style="background:var(--surface3)">'+
+      '<th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:var(--text2)">#</th>'+
+      '<th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:var(--text2)">Proje</th>'+
+      '<th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:var(--text2)">İş Tanımı</th>'+
+      '<th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:var(--text2)">Sorumlu</th>'+
+      '<th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:var(--text2)">Veriliş</th>'+
+      '<th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:var(--text2)">Bitiş</th>'+
+      '<th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:var(--text2)">Durum</th>'+
+    '</tr></thead><tbody>'+
+    filtered.map(function(r,i){
+      var dc = durumRenk[r.isEmriDurum]||['#F3F4F6','#374151'];
+      return '<tr style="cursor:pointer;border-bottom:1px solid var(--border)" data-rid="'+r.id+'" onclick="openIePanel(this.dataset.rid)">'+
+        '<td style="padding:10px 14px;font-size:12px;color:var(--text3)">'+(i+1)+'</td>'+
+        '<td style="padding:10px 14px;font-size:12.5px;font-weight:600;color:var(--text)">'+esc(r.projeAdi||'—')+'</td>'+
+        '<td style="padding:10px 14px;font-size:12px;color:var(--text2)">'+esc(r.isTanimi||'—')+'</td>'+
+        '<td style="padding:10px 14px;font-size:12px;color:var(--text2)">'+esc(r.sorumlu||'—')+'</td>'+
+        '<td style="padding:10px 14px;font-size:12px;color:var(--text2)">'+(r.gelisTarihi?fmtDate(r.gelisTarihi):'—')+'</td>'+
+        '<td style="padding:10px 14px;font-size:12px;color:'+(r.bitisTarihi&&new Date(r.bitisTarihi)<new Date()&&r.isEmriDurum!==IE_DURUM.TAMAMLANDI?'#DC2626':'var(--text2)')+'">'+
+          (r.bitisTarihi?fmtDate(r.bitisTarihi):'—')+
+        '</td>'+
+        '<td style="padding:10px 14px">'+
+          '<span style="background:'+dc[0]+';color:'+dc[1]+';font-size:10px;font-weight:700;padding:3px 10px;border-radius:10px">'+esc(r.isEmriDurum||'Beklemede')+'</span>'+
+        '</td>'+
+      '</tr>';
+    }).join('')+
+    '</tbody></table>';
+}
+
+function mkIeStatCard(n, lbl, color, bg, filtre){
+  var sel = _isemirleriFilter===filtre;
+  return '<div class="mp-stat" style="background:'+bg+';flex:1;cursor:pointer'+(sel?';outline:2px solid '+color+';outline-offset:2px':'')+'" data-ief="'+(filtre||'')+'">'+
+    '<div class="mp-stat-num" style="color:'+color+'">'+n+'</div>'+
+    '<div class="mp-stat-lbl" style="color:'+color+'">'+lbl+'</div>'+
+  '</div>';
 }
 
 function openAylikRapor() {
