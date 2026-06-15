@@ -122,7 +122,7 @@ td.bold{font-weight:500}
 .empty-icon{width:44px;height:44px;background:var(--surface3);border-radius:var(--rl);display:flex;align-items:center;justify-content:center;margin:0 auto 10px;font-size:20px}
 .empty-msg{font-size:13px;color:var(--text2);font-weight:500;margin-bottom:3px}
 .empty-sub{font-size:11.5px;color:var(--text3)}
-.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.25);z-index:9000;align-items:center;justify-content:center;backdrop-filter:blur(1px)}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.25);z-index:100;align-items:center;justify-content:center;backdrop-filter:blur(1px)}
 .overlay.open{display:flex!important;align-items:center;justify-content:center}
 .modal{background:var(--surface);border-radius:12px;box-shadow:var(--shl);width:720px;min-width:320px;border:1px solid var(--border);position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:101;max-height:92vh;overflow-y:auto;visibility:hidden}
 @keyframes modalIn{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
@@ -437,10 +437,19 @@ th:hover .filter-icon{opacity:1}
 .af-chip{display:inline-flex;align-items:center;gap:4px;background:var(--accent-l);color:var(--accent);font-size:11px;font-weight:500;padding:2px 8px;border-radius:12px;border:1px solid #C7D7FA}
 .af-chip button{background:none;border:none;cursor:pointer;color:var(--accent);font-size:13px;line-height:1;padding:0 1px}
 
+.ie-panel{position:fixed;right:0;top:0;bottom:0;width:440px;background:var(--surface);border-left:2px solid #7C3AED;box-shadow:-12px 0 40px rgba(124,58,237,.15);z-index:8000;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .25s ease}
+.ie-panel.open{transform:translateX(0)}
+.ie-panel-head{background:linear-gradient(135deg,#3B0764,#7C3AED);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.ie-panel-body{flex:1;overflow-y:auto;padding:16px}
+.ie-panel-foot{padding:14px 16px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;background:var(--surface2)}
+.ie-act-btn{flex:1;padding:10px;border-radius:8px;border:none;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
 <script>
 // ── Firebase Dinamik Yükleme ──
+var isEmirleri = [];
+var silinenler = [];
+
 var firebaseConfig = {
   apiKey: "AIzaSyB_KJppXGpbe8vZj75PZQRdxv57Fdwb00A",
   authDomain: "insaat-takip-cb90b.firebaseapp.com",
@@ -453,6 +462,7 @@ var firebaseConfig = {
 function initFirebase() {
   firebase.initializeApp(firebaseConfig);
   var db = firebase.firestore();
+  window.db = db;
 
   window._fbSave = function(record) {
     return db.collection('isler').doc(record.id).set(record);
@@ -462,6 +472,20 @@ function initFirebase() {
   };
   window._fbDeleteIsEmri = function(id) {
     return db.collection('isEmirleri').doc(id).delete();
+  };
+  window._fbSoftDelete = function(obj) {
+    obj._deleted = true; obj._deletedAt = Date.now();
+    return db.collection('silinenler').doc(obj.id).set(obj);
+  };
+  window._fbSilinenRestore = function(id) {
+    return db.collection('silinenler').doc(id).get().then(function(d){
+      if(!d.exists) return;
+      var obj = d.data(); delete obj._deleted; delete obj._deletedAt;
+      return db.collection('isler').doc(obj.id).set(obj).then(function(){ return db.collection('silinenler').doc(id).delete(); });
+    });
+  };
+  window._fbSilinenKaliciSil = function(id) {
+    return db.collection('silinenler').doc(id).delete();
   };
   window._fbDelete = function(id) {
     return db.collection('isler').doc(id).delete();
@@ -502,11 +526,11 @@ function initFirebase() {
     return db.collection('projeler').doc(id).delete();
   };
   // Projeleri gerçek zamanlı dinle
-  db.collection('isEmirleri').orderBy('zaman','desc').onSnapshot(function(snap){
-    isEmirleri=[];
-    snap.forEach(function(d){isEmirleri.push(d.data());});
-    ieListeGuncelle();
-    if(typeof activeTab!=='undefined'&&activeTab==='tab-isemirleri')renderIsEmirleri();
+  db.collection('silinenler').orderBy('_deletedAt','desc').onSnapshot(function(snap){
+    silinenler=[];
+    snap.forEach(function(d){silinenler.push(d.data());});
+    var nb=document.getElementById('nb_cop'); if(nb) nb.textContent=silinenler.length;
+    if(typeof activeTab!=='undefined'&&activeTab==='tab-copkutusu') renderCopKutusu();
   });
   db.collection('isEmirleri').orderBy('zaman','desc').onSnapshot(function(snap){
     isEmirleri=[];
@@ -514,18 +538,14 @@ function initFirebase() {
     ieListeGuncelle();
     if(typeof activeTab!=='undefined'&&activeTab==='tab-isemirleri')renderIsEmirleri();
   });
-  // İş tanımlarını Firebase'den oku
-  db.collection('isTanimlari').get().then(function(snap){
+  db.collection('isTanimlari').onSnapshot(function(snap){
     snap.forEach(function(d){
-      var data = d.data();
-      if(data.dept && data.tanim && IS_TANIMLARI[data.dept]){
-        if(IS_TANIMLARI[data.dept].indexOf(data.tanim)===-1){
-          IS_TANIMLARI[data.dept].push(data.tanim);
-        }
+      var data=d.data();
+      if(data.dept&&data.tanim&&IS_TANIMLARI[data.dept]&&IS_TANIMLARI[data.dept].indexOf(data.tanim)===-1){
+        IS_TANIMLARI[data.dept].push(data.tanim);
       }
     });
   });
-
   db.collection('projeler').orderBy('ad','asc').onSnapshot(function(snap){
     window._projeler = [];
     snap.forEach(function(d){ window._projeler.push(d.data()); });
@@ -649,9 +669,19 @@ loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js', f
       <svg class="nav-svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="5" r="3"/><path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/></svg>
       İşlerim <span class="nav-badge" id="nb_myworks">0</span>
     </button>
+    <button class="nav-item" id="nav-istanim" onclick="switchTabById('tab-istanim')">
+      <svg class="nav-svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 2h12v2H2z"/><path d="M2 6h8"/><path d="M2 9h10"/><path d="M2 12h6"/></svg>
+      İş Tanımları
+    </button>
     <button class="nav-item" id="nav-archive" onclick="switchTabById('tab-archive')">
       <svg class="nav-svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3" width="14" height="3" rx="1"/><path d="M2 6v7a1 1 0 001 1h10a1 1 0 001-1V6"/><line x1="6" y1="9" x2="10" y2="9"/></svg>
       Arşiv <span class="nav-badge" id="nb_archive">0</span>
+    </button>
+  </div>
+  <div style="border-top:1px solid rgba(255,255,255,.1);margin:8px 12px 0;padding-top:8px">
+    <button class="nav-item" id="nav-copkutusu" onclick="switchTabById('tab-copkutusu')" style="color:#F87171">
+      <svg class="nav-svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="2,4 14,4"/><path d="M5,4V3h6v1"/><rect x="3" y="4" width="10" height="10" rx="1"/><line x1="6" y1="7" x2="6" y2="11"/><line x1="10" y1="7" x2="10" y2="11"/></svg>
+      Çöp Kutusu <span class="nav-badge" id="nb_cop" style="background:#DC2626">0</span>
     </button>
   </div>
   <div class="sb-footer">İnşaat İşleri Takip · v3.0<br><span id="footer-date" style="margin-top:2px;display:block"></span></div>
@@ -844,6 +874,37 @@ loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js', f
     <div id="isemirleriList" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden"></div>
   </div>
 
+  <!-- TAB: İŞ TANIMLARI -->
+  <div class="tab-content" id="tab-istanim">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div><div style="font-size:15px;font-weight:600;color:var(--text)">📋 İş Tanımları</div><div style="font-size:11px;color:var(--text3)">Departman bazlı iş tanımlarını yönetin</div></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <button class="btn" id="itBtn_insaat" onclick="itSetDept('İnşaat')" style="background:#DBEAFE;color:#1D4ED8;border-color:#BFDBFE;font-weight:600">İnşaat</button>
+      <button class="btn" id="itBtn_mekanik" onclick="itSetDept('Mekanik')" style="color:var(--text2)">Mekanik</button>
+      <button class="btn" id="itBtn_harita" onclick="itSetDept('Harita')" style="color:var(--text2)">Harita</button>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;box-shadow:var(--sh)">
+      <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center">
+        <input type="text" id="itYeniInput" placeholder="Yeni iş tanımı ekle..." style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none" onkeydown="if(event.key==='Enter')itEkle()">
+        <button class="btn btn-primary" onclick="itEkle()">+ Ekle</button>
+      </div>
+      <div id="itList" style="padding:8px 0"></div>
+    </div>
+  </div>
+
+  <!-- TAB: ÇÖP KUTUSU -->
+  <div class="tab-content" id="tab-copkutusu">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div>
+        <div style="font-size:15px;font-weight:600;color:var(--text)">🗑 Çöp Kutusu</div>
+        <div style="font-size:11px;color:var(--text3)" id="copSub">Silinen kayıtlar</div>
+      </div>
+      <button class="btn" style="color:#DC2626;border-color:#FECACA" onclick="copKutusuBosalt()">Tümünü Kalıcı Sil</button>
+    </div>
+    <div id="copList" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;box-shadow:var(--sh)"></div>
+  </div>
+
   <!-- TAB: ARŞİV -->
   <div class="tab-content" id="tab-archive">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
@@ -948,7 +1009,7 @@ loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js', f
         <div class="form-grid">
           <div class="form-group"><label>Geliş Tarihi <span class="req">*</span></label><input type="date" id="f_gelisTarihi" onchange="autoSetDurum();validateTarihler();checkFormValid()"></div>
           <div class="form-group"><label>İşe Başlangıç Tarihi</label><input type="date" id="f_baslangicTarihi" onchange="autoSetDurum();validateTarihler()"><div id="err_baslangic" style="color:#DC2626;font-size:11px;margin-top:3px;display:none"></div></div>
-          <div class="form-group"><label>Bitiş Tarihi</label><input type="date" id="f_bitisTarihi" onchange="autoSetDurum();validateTarihler()"><div id="err_bitis" style="color:#DC2626;font-size:11px;margin-top:3px;display:none"></div></div>
+          <div class="form-group"><label>Bitiş Tarihi</label><input type="date" id="f_bitisTarihi" onchange="autoSetDurum();validateTarihler()"><div id="err_bitis" style="color:#DC2626;font-size:11px;margin-top:3px;display:none"></div><div id="hedefBitisUyari" style="display:none;font-size:11px;margin-top:3px;font-weight:600"></div><input type="hidden" id="f_hedefBitisTarihi"></div>
           <div class="form-group">
             <label>Durum</label>
             <select id="f_durum" onchange="onDurumManualChange()">
@@ -1190,7 +1251,7 @@ function fmtDate(d){ if(!d) return '—'; var p=d.split('-'); return p[2]+'.'+p[
 function isOD(r){ return r.bitisTarihi && r.durum!=='Tamamlandı' && r.durum!=='İptal' && new Date(r.bitisTarihi)<new Date(); }
 
 var IS_TANIMLARI={
-  'İnşaat':['İnşaat İşleri Metraj Hesabı (Çelik, Yol, Drenaj, Telçit vb.)','Drenaj Projesi','TM Betonarme Projesi','DM Betonarme Projesi','Telçit Paftası','Sabit Sistem Çelik Konstrüksiyon Hesabı','Sabit Sistem Çelik Konstrüksiyon Çizimi','Sabit Sistem Çelik Konstrüksiyon Raporu','Carport Hesabı','Çelik Sevk Takibi','Dolguya Uygunluk Kontrolü','Çelik Konstrüksiyon Proje','Betonarme Statik Proje','İş Makinesi Teklif Toplama','Yakıt Fiyat Araştırması'],
+  'İnşaat':['İnşaat İşleri Teklif Toplama','Drenaj Projesi','TM Betonarme Projesi','DM Betonarme Projesi','Telçit Paftası','Sabit Sistem Çelik Konstrüksiyon Hesabı','Sabit Sistem Çelik Konstrüksiyon Çizimi','Sabit Sistem Çelik Konstrüksiyon Raporu','Carport Hesabı','Çelik Sevk Takibi','Dolguya Uygunluk Kontrolü','Çelik Konstrüksiyon Proje','Betonarme Statik Proje','İş Makinesi Teklif Toplama','Yakıt Fiyat Araştırması'],
   'Mekanik':['Tracker Sistem Çelik Konstrüksiyon Hesabı','Tracker Sistem Çelik Konstrüksiyon Çizimi','Tracker Sistem Çelik Konstrüksiyon Raporu','Telçit ve Kapı Detay Projesi','İnverter Support Projesi','Carport Çelik Hesabı','Çatı GES Konstrüksiyon','Prosedür ve Manuel Hazırlanması','Çakma-Çekme Testi','FAT','Tracker Devreye Alma','Satın Alma Öncesi Component Seçimi'],
   'Harita':['Tesviye Projesi (Panel Altı)','Yol Projesi','Tesviye ve Yol Projesi','Drenaj Projesi','Halihazır Harita Üretimi','Aplikasyon Elemanlarının Sayısallaştırılması']
 };
@@ -1229,6 +1290,9 @@ function getFiltered(){
 
 
 function updateMyworksBadge(){
+  var nbIe=document.getElementById('nb_isemirleri');
+  if(nbIe&&currentUser) nbIe.textContent=isEmirleri.filter(function(x){return x.isEmriVerenId===currentUser.id;}).length;
+  
   var nbMy = document.getElementById('nb_myworks');
   if(!nbMy) return;
   if(!currentUser){ nbMy.textContent = ''; return; }
@@ -1670,15 +1734,6 @@ function checkFormValid(){
     var manuelVal = (document.getElementById('f_isTanimiManuel').value||'').trim();
     if(!manuelVal){ showToast('⚠ İş tanımı girin'); return; }
     it = manuelVal;
-    // Listeye kalıcı ekle — hafızaya ve Firebase'e
-    var dept2 = document.getElementById('f_departman').value;
-    if(dept2 && IS_TANIMLARI[dept2] && IS_TANIMLARI[dept2].indexOf(manuelVal)===-1){
-      IS_TANIMLARI[dept2].push(manuelVal);
-      // Firebase'e kaydet
-      if(db) db.collection('isTanimlari').doc(dept2+'_'+manuelVal.replace(/[^a-zA-Z0-9]/g,'_')).set({
-        dept: dept2, tanim: manuelVal, ekleyen: currentUser?currentUser.id:'', zaman: Date.now()
-      });
-    }
   }
   var oy = document.getElementById('f_onaylayan').value;
   var dept = document.getElementById('f_departman').value;
@@ -1858,7 +1913,14 @@ function saveRecord(){
   var it=document.getElementById('f_isTanimi').value;
   if(it==='__yeni__'){
     var manuel = (document.getElementById('f_isTanimiManuel').value||'').trim();
-    it = manuel ? '__yeni__' : '';
+    if(!manuel){ showToast('⚠ Yeni iş tanımını girin'); return; }
+    it = manuel;
+    // Listeye ve Firebase'e ekle
+    var _dept2 = document.getElementById('f_departman').value;
+    if(_dept2 && IS_TANIMLARI[_dept2] && IS_TANIMLARI[_dept2].indexOf(it)===-1){
+      IS_TANIMLARI[_dept2].push(it);
+      if(db) db.collection('isTanimlari').doc(_dept2+'_'+Date.now()).set({dept:_dept2,tanim:it,ekleyen:currentUser?currentUser.id:'',zaman:Date.now()});
+    }
   }
   if(!it||it.indexOf('Seçin')!==-1||it.indexOf('departman')!==-1){showToast('⚠ İş tanımı seçiniz!');return;}
   var oy=document.getElementById('f_onaylayan').value;
@@ -1874,6 +1936,8 @@ function saveRecord(){
     if(existing && existing.ekleyen) obj.ekleyen = existing.ekleyen;
   }
   FLDS_S.forEach(function(f){var el=document.getElementById('f_'+f);obj[f]=el?(el.value.trim()||''):'';});
+  if(it) obj.isTanimi=it;
+  var hbEl2=document.getElementById('f_hedefBitisTarihi'); if(hbEl2&&hbEl2.value) obj.hedefBitisTarihi=hbEl2.value;
   // Bildirim gönderilen kişileri kayda ekle
   if(_notifTargets.size > 0) {
     obj.notifHedefler = Array.from(_notifTargets).map(function(uid){
@@ -1913,19 +1977,26 @@ function saveRecord(){
 }
 
 function deleteRecord(id){
+  if(!currentUser){showToast('⚠ Giriş yapmanız gerekiyor');return;}
   var r=records.find(function(x){return x.id===id;});
-  if(!canEdit(r)){showToast('⚠ Bu kaydı yalnızca ekleyen kişi silebilir!');return;}
-  if(!confirm('Bu kaydı silmek istediğinizden emin misiniz?'))return;
+  if(!r){showToast('⚠ Kayıt bulunamadı');return;}
+  if(r && !canEdit(r)){showToast('⚠ Bu kaydı yalnızca ekleyen kişi silebilir!');return;}
+  if(!confirm('Bu kayıt çöp kutusuna taşınacak. Devam?'))return;
   closeDetail();
-  if(window._fbDelete){
-    var histDel = {id:genId(),kayitId:id,kullanici:currentUser?currentUser.ad:'?',zaman:Date.now(),tip:'silme',durum:''};
+  var obj = JSON.parse(JSON.stringify(r));
+  obj._deleted = true;
+  obj._deletedAt = Date.now();
+  obj._deletedBy = currentUser.id;
+  var _db=window.db||db;
+  _db.collection('silinenler').doc(obj.id).set(obj).then(function(){
+    return _db.collection('isler').doc(id).delete();
+  }).then(function(){
+    if(r._isEmriId) _db.collection('isEmirleri').doc(r._isEmriId).update({isEmriDurum:'Silindi'}).catch(function(){});
+    // Geçmişe ekle
+    var histDel={id:genId(),kayitId:id,kullanici:currentUser.ad,zaman:Date.now(),tip:'silme',durum:''};
     if(window._fbSaveHistory) window._fbSaveHistory(histDel);
-    window._fbDelete(id).then(function(){ showToast('Kayıt silindi'); })
-    .catch(function(e){ showToast('⚠ Hata: '+e.message); });
-  } else {
-    records=records.filter(function(x){return x.id!==id;});
-    renderAll(); showToast('Kayıt silindi');
-  }
+    showToast('Kayıt çöp kutusuna taşındı ✓');
+  }).catch(function(e){showToast('⚠ Hata: '+e.message);});
 }
 
 function dr(k,v){return '<div class="d-row"><span class="d-key">'+k+'</span><span class="d-val">'+v+'</span></div>';}
@@ -1994,7 +2065,7 @@ function setView(view,el){
   document.getElementById('breadSub').textContent=subs[view]||'';
   document.getElementById('tableToolbarTitle').textContent=titles[view]||view;
   // Arşiv, İşlerim, Kütüphane için iş listesine geç
-  if(activeTab==='tab-archive' || activeTab==='tab-myworks' || activeTab==='tab-kutuphane' || activeTab==='tab-isemirleri'){
+  if(activeTab==='tab-archive' || activeTab==='tab-myworks' || activeTab==='tab-kutuphane' || activeTab==='tab-isemirleri' || activeTab==='tab-istanim' || activeTab==='tab-copkutusu'){
     var tabBtn = document.getElementById('tab-btn-list');
     switchTab('tab-list', tabBtn||null);
   } else if(activeTab==='tab-list') {
@@ -2022,9 +2093,15 @@ function switchTab(tabId,el){
   } else if(tabId==='tab-myworks'){
     if(_fs) _fs.style.display='none';
     renderMyWorks();
+  } else if(tabId==='tab-copkutusu'){
+    if(_fs) _fs.style.display='none';
+    renderCopKutusu();
   } else if(tabId==='tab-isemirleri'){
     if(_fs) _fs.style.display='none';
     renderIsEmirleri();
+  } else if(tabId==='tab-istanim'){
+    if(_fs) _fs.style.display='none';
+    itSetDept(_itDept||'İnşaat');
   } else if(tabId==='tab-archive'){
     if(_fs) _fs.style.display='none';
     renderArchive();
@@ -2817,7 +2894,7 @@ function openPrintView(){
     '</div>'+
   '</div>'+
 
-  '</body></html>';
+  '<\/body><\/html>';
 
   var win=window.open('','_blank','width=1200,height=850');
   win.document.write(html);
@@ -3352,13 +3429,12 @@ function notifClick(el) {
   if(!n) return;
   // Paneli kapat
   toggleNotifPanel();
-  // İş emri bildirimi ise — isEmirleri listesinde ara
-  if(n.tip==='isemri' || n.tip==='isemri_kabul' || n.tip==='isemri_red') {
-    var ie = (typeof isEmirleri!=='undefined' ? isEmirleri : []).find(function(x){ return x.id===n.kayitId; });
-    if(ie){ iePanelAc(ie.id); return; }
-    showToast('İş emri bulunamadı'); return;
+  // Kaydı bul — önce kayitId, sonra projeAdi ile
+  if(n.tip==='isemri'||n.tip==='isemri_kabul'||n.tip==='isemri_red'){
+    var ie=(typeof isEmirleri!=='undefined'?isEmirleri:[]).find(function(x){return x.id===n.kayitId;});
+    if(ie){iePanelAc(ie.id);}else{showToast('İş emri bulunamadı');}
+    return;
   }
-  // Normal kayıt — records'ta ara
   var r = records.find(function(x){ return x.id === n.kayitId; });
   if(!r) r = records.find(function(x){ return x.projeAdi === n.projeAdi || x.isTanimi === n.projeAdi; });
   if(!r) { showToast('Kayıt bulunamadı'); return; }
@@ -3919,7 +3995,7 @@ function printMyWorks(){
   '<tbody>'+rows+'</tbody></table>'+
   '<div style="margin-top:12px;padding-top:8px;border-top:1px solid #E5E7EB;font-size:8px;color:#9CA3AF;display:flex;justify-content:space-between">'+
   '<span>Smart Güneş Enerjisi Teknolojileri · İnşaat İşleri Takip Sistemi</span><span>'+tarih+' · '+esc(currentUser.ad)+'</span></div>'+
-  '</body></html>';
+  '<\/body><\/html>';
   var win=window.open('','_blank','width=1100,height=800');
   win.document.write(html);win.document.close();
   win.onload=function(){win.print();};
@@ -4092,7 +4168,7 @@ function printArchive(){
   '</tr></thead><tbody>'+rows+'</tbody></table>'+
   '<div style="margin-top:12px;padding-top:8px;border-top:1px solid #E5E7EB;font-size:8px;color:#9CA3AF;display:flex;justify-content:space-between">'+
   '<span>Smart Güneş Enerjisi Teknolojileri · İnşaat İşleri Takip Sistemi</span><span>'+tarih+'</span></div>'+
-  '</body></html>';
+  '<\/body><\/html>';
   var win=window.open('','_blank','width=1100,height=800');
   win.document.write(html);win.document.close();
   win.onload=function(){win.print();};
@@ -4853,7 +4929,7 @@ function generateAylikRapor(){
     '</tbody></table>'+
 
     '<div class="footer"><span>Smart Güneş Enerjisi Teknolojileri · İnşaat İşleri Takip Sistemi</span><span>'+tarih+' · '+donem+' Raporu</span></div>'+
-    '</body></html>';
+    '<\/body><\/html>';
 
   // Yeni pencerede aç ve yazdır
   var win = window.open('','_blank','width=900,height=1100');
@@ -5167,300 +5243,8 @@ renderAll();
   }, 1000);
 })();
 
-// ══ İŞ EMRİ ══
-var isEmirleri=[];
-var isEmirleri = [];
-
-function ieAc() {
-  if (!currentUser) { showToast('Giriş yapmanız gerekiyor'); return; }
-  document.getElementById('ieVerenLabel').textContent = currentUser.ad + ' · ' + currentUser.dept;
-  document.getElementById('ie_verisTarihi').value = new Date().toISOString().split('T')[0];
-  ['ie_talep','ie_proje','ie_dept','ie_detay','ie_dosya','ie_notlar','ie_bitisTarihi'].forEach(function(id) {
-    var el = document.getElementById(id); if (el) el.value = '';
-  });
-  ['ie_sorumlu','ie_onaylayan'].forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el) { el.innerHTML = '<option value="">— Önce departman seçin —</option>'; el.disabled = true; }
-  });
-  var t = document.getElementById('ie_tanim');
-  if (t) { t.innerHTML = '<option value="">— Önce departman seçin —</option>'; t.disabled = true; }
-  var btn = document.getElementById('ieSendBtn');
-  if (btn) { btn.disabled = true; btn.style.opacity = '.4'; btn.style.cursor = 'not-allowed'; }
-  var modal = document.getElementById('ieModal');
-  if (modal) {
-    modal.style.visibility = 'hidden';
-    modal.style.top = '50%';
-    modal.style.left = '50%';
-    modal.style.transform = 'translate(-50%,-50%)';
-  }
-  document.getElementById('ieOverlay').classList.add('open');
-  setTimeout(function() {
-    var m = document.getElementById('ieModal');
-    var h = document.getElementById('ieModalHead');
-    if (m) m.style.visibility = 'visible';
-    if (m && h && !h._ied) { makeDraggable(m, h); h._ied = true; }
-  }, 50);
-}
-
-function ieKapat() {
-  document.getElementById('ieOverlay').classList.remove('open');
-  var mn = document.getElementById('ieMinimized'); if (mn) mn.style.display = 'none';
-}
-function ieMinimize() {
-  document.getElementById('ieOverlay').classList.remove('open');
-  var mn = document.getElementById('ieMinimized'); if (mn) mn.style.display = 'flex';
-}
-function ieRestore() {
-  var mn = document.getElementById('ieMinimized'); if (mn) mn.style.display = 'none';
-  document.getElementById('ieOverlay').classList.add('open');
-}
-
-function ieDeptDegis() {
-  var dept = document.getElementById('ie_dept').value; if (!dept) return;
-  var s = document.getElementById('ie_sorumlu');
-  s.innerHTML = '<option value="">— Seçiniz —</option>' + (SORUMLULAR[dept]||[]).map(function(k){return '<option value="'+k+'">'+k+'</option>';}).join('');
-  s.disabled = false;
-  var o = document.getElementById('ie_onaylayan');
-  o.innerHTML = '<option value="">— Seçiniz —</option>' + (ONAYLAYANLAR[dept]||[]).map(function(k){return '<option value="'+k+'">'+k+'</option>';}).join('');
-  o.disabled = false;
-  var ta = document.getElementById('ie_tanim');
-  ta.innerHTML = '<option value="">— Seçiniz —</option>' + (IS_TANIMLARI[dept]||[]).map(function(t){return '<option value="'+t+'">'+t+'</option>';}).join('') + '<option value="__yeni__">➕ Yeni İş Tanımı Ekle...</option>';
-  ta.disabled = false;
-}
-
-function ieProjeAC() {
-  var input = document.getElementById('ie_proje');
-  var list = document.getElementById('ie_projeList');
-  if (!input || !list) return;
-  var q = input.value.toLowerCase().trim();
-  var filtered = (window._projeler||[]).filter(function(p){return !q||p.ad.toLowerCase().indexOf(q)!==-1;});
-  if (!filtered.length) { list.classList.remove('open'); return; }
-  list.innerHTML = filtered.map(function(p){return '<div class="autocomplete-item" data-ad="'+esc(p.ad)+'"><span>'+esc(p.ad)+'</span></div>';}).join('');
-  list.classList.add('open');
-  list.onclick = function(e) {
-    var item = e.target.closest('.autocomplete-item'); if (!item) return;
-    input.value = item.getAttribute('data-ad');
-    list.classList.remove('open');
-    ieKontrol();
-  };
-}
-
-function ieKontrol() {
-  var ok = document.getElementById('ie_talep').value &&
-    (document.getElementById('ie_proje').value||'').trim() &&
-    document.getElementById('ie_dept').value &&
-    document.getElementById('ie_sorumlu').value &&
-    document.getElementById('ie_onaylayan').value &&
-    document.getElementById('ie_tanim').value &&
-    (document.getElementById('ie_detay').value||'').trim();
-  var btn = document.getElementById('ieSendBtn');
-  if (btn) { btn.disabled = !ok; btn.style.opacity = ok ? '1' : '.4'; btn.style.cursor = ok ? 'pointer' : 'not-allowed'; }
-}
-
-function ieGonder() {
-  if (!currentUser) { showToast('Giriş yapmanız gerekiyor'); return; }
-  var tanim = document.getElementById('ie_tanim').value;
-  if (tanim === '__yeni__') { showToast('Önce yeni iş tanımını girin'); return; }
-  var sorumluAd = document.getElementById('ie_sorumlu').value;
-  var sorumluUser = KULLANICILAR.find(function(u){return u.ad === sorumluAd;});
-  var obj = {
-    id: genId(),
-    projeTalebi: document.getElementById('ie_talep').value,
-    projeAdi: document.getElementById('ie_proje').value.trim(),
-    departman: document.getElementById('ie_dept').value,
-    oncelik: document.getElementById('ie_oncelik').value,
-    sorumlu: sorumluAd,
-    sorumluId: sorumluUser ? sorumluUser.id : '',
-    onaylayan: document.getElementById('ie_onaylayan').value,
-    isTanimi: tanim,
-    talepSebebi: document.getElementById('ie_detay').value.trim(),
-    dosyaLink: document.getElementById('ie_dosya').value.trim(),
-    gelisTarihi: document.getElementById('ie_verisTarihi').value,
-    bitisTarihi: document.getElementById('ie_bitisTarihi').value,
-    notlar: document.getElementById('ie_notlar').value.trim(),
-    isEmriDurum: 'Beklemede',
-    isEmriVeren: currentUser.ad,
-    isEmriVerenId: currentUser.id,
-    zaman: Date.now()
-  };
-  if (!window._fbSaveIsEmri) { showToast('Firebase bağlı değil'); return; }
-  window._fbSaveIsEmri(obj).then(function() {
-    if (sorumluUser && sorumluUser.id !== currentUser.id && window._fbSaveNotif) {
-      window._fbSaveNotif({id:genId(), gonderen:currentUser.id, hedef:sorumluUser.id,
-        tip:'isemri', projeAdi:obj.projeAdi, kayitId:obj.id,
-        mesaj:currentUser.ad+' size iş emri gönderdi: '+obj.isTanimi,
-        zaman:Date.now(), okundu:false});
-    }
-    ieKapat();
-    showToast('İş emri gönderildi! ' + sorumluAd + ' bildirim aldı.');
-  }).catch(function(e){showToast('Hata: '+e.message);});
-}
-
-function ieKart(lbl, val) {
-  return '<div style="background:var(--surface2);border-radius:8px;padding:10px">' +
-    '<div style="font-size:9px;color:var(--text3);font-weight:600;text-transform:uppercase;margin-bottom:3px">'+lbl+'</div>' +
-    '<div style="font-size:12.5px;font-weight:600;color:var(--text)">'+esc(val||'—')+'</div></div>';
-}
-
-function iePanelAc(id) {
-  var r = isEmirleri.find(function(x){return x.id===id;}); if (!r) return;
-  document.getElementById('iePanelAlt').textContent = r.projeAdi || '—';
-  var dc = {'Beklemede':['#FEF3C7','#D97706'],'Kabul Edildi':['#D1FAE5','#059669'],'Reddedildi':['#FEE2E2','#DC2626']};
-  var col = dc[r.isEmriDurum] || ['#F3F4F6','#6B7280'];
-  document.getElementById('iePanelBody').innerHTML =
-    '<div style="background:'+col[0]+';border-radius:8px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
-      '<span style="font-size:11px;font-weight:700;color:'+col[1]+';text-transform:uppercase">'+esc(r.isEmriDurum||'Beklemede')+'</span>' +
-      '<span style="font-size:10px;color:'+col[1]+'">'+esc(r.isEmriVeren||'—')+'</span>' +
-    '</div>' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">' +
-      ieKart('Proje',r.projeAdi)+ieKart('İş Tanımı',r.isTanimi)+
-      ieKart('Sorumlu',r.sorumlu)+ieKart('Onaylayan',r.onaylayan)+
-      ieKart('Departman',r.departman)+ieKart('Öncelik',r.oncelik)+
-      ieKart('Veriliş',r.gelisTarihi?fmtDate(r.gelisTarihi):'—')+
-      ieKart('İst. Bitiş',r.bitisTarihi?fmtDate(r.bitisTarihi):'—')+
-    '</div>' +
-    '<div style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:8px">' +
-      '<div style="font-size:9px;color:var(--text3);font-weight:600;text-transform:uppercase;margin-bottom:6px">İş Detayı</div>' +
-      '<div style="font-size:12.5px;color:var(--text2);line-height:1.7;white-space:pre-wrap">'+esc(r.talepSebebi||'—')+'</div></div>' +
-    (r.redSebebi ? '<div style="background:#FEE2E2;border-radius:8px;padding:12px;margin-bottom:8px"><div style="font-size:9px;color:#DC2626;font-weight:600;text-transform:uppercase;margin-bottom:6px">Red Sebebi</div><div style="font-size:12.5px;color:#991B1B">'+esc(r.redSebebi)+'</div></div>' : '') +
-    (r.notlar ? '<div style="background:var(--surface2);border-radius:8px;padding:12px"><div style="font-size:9px;color:var(--text3);font-weight:600;text-transform:uppercase;margin-bottom:6px">Notlar</div><div style="font-size:12.5px;color:var(--text2)">'+esc(r.notlar)+'</div></div>' : '');
-
-  var benSorumlu = currentUser && r.sorumluId && r.sorumluId === currentUser.id;
-  var benVeren = currentUser && r.isEmriVerenId === currentUser.id;
-  var foot = document.getElementById('iePanelFoot');
-  foot.innerHTML = '';
-  if (benSorumlu && r.isEmriDurum === 'Beklemede') {
-    foot.innerHTML =
-      '<button class="ie-act-btn" style="background:#059669;color:#fff" data-ieid="'+r.id+'" onclick="ieKabul(this.dataset.ieid)">Kabul Et</button>' +
-      '<button class="ie-act-btn" style="background:#DC2626;color:#fff" data-ieid="'+r.id+'" onclick="ieRedFormAc(this.dataset.ieid)">Reddet</button>';
-  } else if (benVeren && r.isEmriDurum === 'Beklemede') {
-    foot.innerHTML = '<div style="font-size:12px;color:var(--text3);flex:1">Kabul/red bekleniyor...</div>' +
-      '<button class="ie-act-btn" style="background:#FEE2E2;color:#DC2626;max-width:80px" data-ieid="'+r.id+'" onclick="ieGeriAl(this.dataset.ieid)">🗑 Sil</button>';
-  } else if (r.isEmriDurum === 'Kabul Edildi') {
-    foot.innerHTML = '<div style="font-size:12px;color:#059669;text-align:center;flex:1">Kabul edildi — iş listesine eklendi</div>' +
-      '<button class="ie-act-btn" style="background:#FEE2E2;color:#DC2626;max-width:100px" data-ieid="'+r.id+'" onclick="ieGeriAl(this.dataset.ieid)">🗑 Sil</button>';
-  } else if (r.isEmriDurum === 'Reddedildi') {
-    foot.innerHTML = '<div style="font-size:12px;color:#DC2626;text-align:center;flex:1">Reddedildi</div>' +
-      '<button class="ie-act-btn" style="background:#FEE2E2;color:#DC2626;max-width:100px" data-ieid="'+r.id+'" onclick="ieGeriAl(this.dataset.ieid)">🗑 Sil</button>';
-  }
-  // Veren kişi her durumda silebilir
-  if(benVeren && foot.innerHTML.indexOf('Beklemede')!==-1){
-    foot.innerHTML += '<button class="ie-act-btn" style="background:#FEE2E2;color:#DC2626;max-width:80px" data-ieid="'+r.id+'" onclick="ieGeriAl(this.dataset.ieid)">🗑 Sil</button>';
-  }
-  document.getElementById('iePanel').classList.add('open');
-  document.getElementById('iePanelBg').style.display = 'block';
-}
-
-function iePanelKapat() {
-  document.getElementById('iePanel').classList.remove('open');
-  document.getElementById('iePanelBg').style.display = 'none';
-}
-
-function ieKabul(id) {
-  var r = isEmirleri.find(function(x){return x.id===id;}); if (!r) return;
-  r.isEmriDurum = 'Kabul Edildi';
-  var isObj = JSON.parse(JSON.stringify(r));
-  isObj.durum = 'Bekliyor';
-  isObj.ekleyen = currentUser.id;
-  delete isObj.isEmriDurum; delete isObj.isEmriVeren; delete isObj.isEmriVerenId; delete isObj.sorumluId;
-  window._fbSave(isObj);
-  window._fbSaveIsEmri(r).then(function() {
-    if (window._fbSaveNotif) {
-      window._fbSaveNotif({id:genId(), gonderen:currentUser.id, hedef:r.isEmriVerenId,
-        tip:'isemri_kabul', projeAdi:r.projeAdi, kayitId:r.id,
-        mesaj:currentUser.ad+' iş emrini kabul etti.', zaman:Date.now(), okundu:false});
-    }
-    iePanelKapat();
-    showToast('Kabul edildi ve iş listesine eklendi!');
-  });
-}
-
-function ieRedFormAc(id) {
-  document.getElementById('iePanelFoot').innerHTML =
-    '<div style="width:100%;display:flex;flex-direction:column;gap:8px">' +
-      '<textarea id="ie_redSebep" placeholder="Red sebebini yazın (zorunlu)..." style="width:100%;padding:8px;border:1px solid #FECACA;border-radius:8px;font-size:12px;font-family:inherit;outline:none;min-height:70px;resize:vertical"></textarea>' +
-      '<div style="display:flex;gap:8px">' +
-        '<button class="ie-act-btn" style="background:#DC2626;color:#fff" data-ieid="'+id+'" onclick="ieRedGonder(this.dataset.ieid)">Reddet</button>' +
-        '<button class="ie-act-btn" style="background:var(--surface3);color:var(--text);border:1px solid var(--border)" data-ieid="'+id+'" onclick="iePanelAc(this.dataset.ieid)">İptal</button>' +
-      '</div></div>';
-}
-
-function ieRedGonder(id) {
-  var sebep = (document.getElementById('ie_redSebep').value||'').trim();
-  if (!sebep) { showToast('Red sebebi zorunlu'); return; }
-  var r = isEmirleri.find(function(x){return x.id===id;}); if (!r) return;
-  r.isEmriDurum = 'Reddedildi';
-  r.redSebebi = sebep;
-  window._fbSaveIsEmri(r).then(function() {
-    if (window._fbSaveNotif) {
-      window._fbSaveNotif({id:genId(), gonderen:currentUser.id, hedef:r.isEmriVerenId,
-        tip:'isemri_red', projeAdi:r.projeAdi, kayitId:r.id,
-        mesaj:currentUser.ad+' iş emrini reddetti: '+sebep.slice(0,60), zaman:Date.now(), okundu:false});
-    }
-    iePanelKapat();
-    showToast('İş emri reddedildi.');
-  });
-}
-
-
-function ieGeriAl(id) {
-  if (!confirm('Bu iş emrini silmek istediğinize emin misiniz?')) return;
-  // Önce window._fbDeleteIsEmri, yoksa direkt db
-  var delFn = window._fbDeleteIsEmri || function(docId){
-    return db.collection('isEmirleri').doc(docId).delete();
-  };
-  delFn(id).then(function() {
-    iePanelKapat();
-    showToast('İş emri silindi.');
-  }).catch(function(e){ showToast('Hata: ' + (e.message||e)); });
-}
-
-function ieListeGuncelle() {
-  var nb = document.getElementById('nb_isemirleri');
-  if (!nb || !currentUser) return;
-  nb.textContent = isEmirleri.filter(function(x){return x.isEmriVerenId===currentUser.id;}).length;
-}
-
-function renderIsEmirleri() {
-  if (!currentUser) return;
-  var benim = isEmirleri.filter(function(x){return x.isEmriVerenId===currentUser.id;});
-  var sub = document.getElementById('isemirleriSub');
-  if (sub) sub.textContent = benim.length + ' iş emri';
-  var colors = {Tümü:['#DBEAFE','#1D4ED8'],Beklemede:['#FEF3C7','#D97706'],'Kabul Edildi':['#D1FAE5','#059669'],Reddedildi:['#FEE2E2','#DC2626']};
-  var stats = {Tümü:benim.length, Beklemede:0,'Kabul Edildi':0, Reddedildi:0};
-  benim.forEach(function(x){if (stats[x.isEmriDurum]!==undefined) stats[x.isEmriDurum]++;});
-  var sd = document.getElementById('isemirleriStats');
-  if (sd) sd.innerHTML = Object.keys(stats).map(function(k){
-    var c = colors[k];
-    return '<div class="mp-stat" style="background:'+c[0]+';flex:1"><div class="mp-stat-num" style="color:'+c[1]+'">'+stats[k]+'</div><div class="mp-stat-lbl" style="color:'+c[1]+'">'+k+'</div></div>';
-  }).join('');
-  var list = document.getElementById('isemirleriList');
-  if (!list) return;
-  if (!benim.length) {list.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3)">Henüz iş emri vermediniz</div>';return;}
-  var dc = {'Beklemede':['#FEF3C7','#D97706'],'Kabul Edildi':['#D1FAE5','#059669'],Reddedildi:['#FEE2E2','#DC2626']};
-  list.innerHTML = '<table style="width:100%;border-collapse:collapse"><thead><tr style="background:var(--surface3)">' +
-    '<th style="padding:10px 14px;font-size:11px;font-weight:600;color:var(--text2);text-align:left">#</th>' +
-    '<th style="padding:10px 14px;font-size:11px;font-weight:600;color:var(--text2);text-align:left">Proje</th>' +
-    '<th style="padding:10px 14px;font-size:11px;font-weight:600;color:var(--text2);text-align:left">İş Tanımı</th>' +
-    '<th style="padding:10px 14px;font-size:11px;font-weight:600;color:var(--text2);text-align:left">Sorumlu</th>' +
-    '<th style="padding:10px 14px;font-size:11px;font-weight:600;color:var(--text2);text-align:left">Tarih</th>' +
-    '<th style="padding:10px 14px;font-size:11px;font-weight:600;color:var(--text2);text-align:left">Durum</th>' +
-    '</tr></thead><tbody>' +
-    benim.map(function(r, i) {
-      var c = dc[r.isEmriDurum] || ['#F3F4F6','#6B7280'];
-      return '<tr style="border-bottom:1px solid var(--border);cursor:pointer" data-ieid="'+r.id+'" onclick="iePanelAc(this.dataset.ieid)">' +
-        '<td style="padding:10px 14px;font-size:12px;color:var(--text3)">'+(i+1)+'</td>' +
-        '<td style="padding:10px 14px;font-size:12.5px;font-weight:600">'+esc(r.projeAdi||'—')+'</td>' +
-        '<td style="padding:10px 14px;font-size:12px;color:var(--text2)">'+esc(r.isTanimi||'—')+'</td>' +
-        '<td style="padding:10px 14px;font-size:12px;color:var(--text2)">'+esc(r.sorumlu||'—')+'</td>' +
-        '<td style="padding:10px 14px;font-size:12px;color:var(--text2)">'+(r.gelisTarihi?fmtDate(r.gelisTarihi):'—')+'</td>' +
-        '<td style="padding:10px 14px"><span style="background:'+c[0]+';color:'+c[1]+';font-size:10px;font-weight:700;padding:3px 10px;border-radius:10px">'+esc(r.isEmriDurum||'Beklemede')+'</span></td>' +
-      '</tr>';
-    }).join('') + '</tbody></table>';
-}
-
-
 </script>
+
 
 <!-- ═══ İŞ EMRİ SİSTEMİ ═══ -->
 <style>
@@ -5590,5 +5374,494 @@ function renderIsEmirleri() {
 </div>
 <div id="iePanelBg" onclick="iePanelKapat()" style="display:none;position:fixed;inset:0;z-index:7999;background:rgba(0,0,0,.2)"></div>
 
+<script>
+// isEmirleri global tanımlandı
+var isEmirleri = [];
+
+function ieAc() {
+  if (!currentUser) { showToast('Giriş yapmanız gerekiyor'); return; }
+  document.getElementById('ieVerenLabel').textContent = currentUser.ad + ' · ' + currentUser.dept;
+  document.getElementById('ie_verisTarihi').value = new Date().toISOString().split('T')[0];
+  ['ie_talep','ie_proje','ie_dept','ie_detay','ie_dosya','ie_notlar','ie_bitisTarihi'].forEach(function(id) {
+    var el = document.getElementById(id); if (el) el.value = '';
+  });
+  ['ie_sorumlu','ie_onaylayan'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) { el.innerHTML = '<option value="">— Önce departman seçin —</option>'; el.disabled = true; }
+  });
+  var t = document.getElementById('ie_tanim');
+  if (t) { t.innerHTML = '<option value="">— Önce departman seçin —</option>'; t.disabled = true; }
+  var btn = document.getElementById('ieSendBtn');
+  if (btn) { btn.disabled = true; btn.style.opacity = '.4'; btn.style.cursor = 'not-allowed'; }
+  var m = document.getElementById('ieModal');
+  if (m) { m.style.visibility='hidden'; m.style.top='50%'; m.style.left='50%'; m.style.transform='translate(-50%,-50%)'; }
+  document.getElementById('ieOverlay').classList.add('open');
+  setTimeout(function() {
+    if (m) m.style.visibility = 'visible';
+    var h = document.getElementById('ieModalHead');
+    if (m && h && !h._ied) { makeDraggable(m, h); h._ied = true; }
+  }, 50);
+}
+
+
+function ieGeriAl(id) {
+  if (!confirm('Bu iş emrini silmek istediğinize emin misiniz?')) return;
+  var delFn = window._fbDeleteIsEmri || function(docId){ return db.collection('isEmirleri').doc(docId).delete(); };
+  delFn(id).then(function() { showToast('İş emri silindi.'); }).catch(function(e){ showToast('Hata: '+(e.message||e)); });
+}
+
+function ieDuzenleAc(id) {
+  var r = isEmirleri.find(function(x){ return x.id===id; });
+  if (!r) return;
+  // Modal aç ve alanları doldur
+  ieAc();
+  setTimeout(function(){
+    if(document.getElementById('ie_talep')) document.getElementById('ie_talep').value = r.projeTalebi||'';
+    if(document.getElementById('ie_proje')) document.getElementById('ie_proje').value = r.projeAdi||'';
+    if(document.getElementById('ie_dept')){ document.getElementById('ie_dept').value = r.departman||''; ieDeptDegis(); }
+    setTimeout(function(){
+      if(document.getElementById('ie_sorumlu')) document.getElementById('ie_sorumlu').value = r.sorumlu||'';
+      if(document.getElementById('ie_onaylayan')) document.getElementById('ie_onaylayan').value = r.onaylayan||'';
+      if(document.getElementById('ie_tanim')) document.getElementById('ie_tanim').value = r.isTanimi||'';
+      if(document.getElementById('ie_oncelik')) document.getElementById('ie_oncelik').value = r.oncelik||'Orta';
+      if(document.getElementById('ie_detay')) document.getElementById('ie_detay').value = r.talepSebebi||'';
+      if(document.getElementById('ie_dosya')) document.getElementById('ie_dosya').value = r.dosyaLink||'';
+      if(document.getElementById('ie_bitisTarihi')) document.getElementById('ie_bitisTarihi').value = r.bitisTarihi||'';
+      if(document.getElementById('ie_notlar')) document.getElementById('ie_notlar').value = r.notlar||'';
+      // Kaydet butonunu güncelleme moduna al
+      var btn = document.getElementById('ieSendBtn');
+      if(btn){ btn.disabled=false; btn.style.opacity='1'; btn.style.cursor='pointer'; btn.setAttribute('data-edit-id', id); btn.onclick=function(){ ieGuncelle(id); }; }
+      ieKontrol();
+    }, 100);
+  }, 150);
+}
+
+function ieGuncelle(id) {
+  var r = isEmirleri.find(function(x){ return x.id===id; });
+  if (!r) return;
+  r.projeTalebi = document.getElementById('ie_talep').value;
+  r.projeAdi = document.getElementById('ie_proje').value.trim();
+  r.departman = document.getElementById('ie_dept').value;
+  r.oncelik = document.getElementById('ie_oncelik').value;
+  r.sorumlu = document.getElementById('ie_sorumlu').value;
+  r.onaylayan = document.getElementById('ie_onaylayan').value;
+  r.isTanimi = document.getElementById('ie_tanim').value;
+  r.talepSebebi = document.getElementById('ie_detay').value.trim();
+  r.dosyaLink = document.getElementById('ie_dosya').value.trim();
+  r.bitisTarihi = document.getElementById('ie_bitisTarihi').value;
+  r.notlar = document.getElementById('ie_notlar').value.trim();
+  window._fbSaveIsEmri(r).then(function(){
+    ieKapat();
+    showToast('İş emri güncellendi ✓');
+    // İş emri gönder butonunu sıfırla
+    var btn = document.getElementById('ieSendBtn');
+    if(btn){ btn.removeAttribute('data-edit-id'); btn.onclick = ieGonder; }
+  });
+}
+
+function ieKapat() {
+  document.getElementById('ieOverlay').classList.remove('open');
+  var mn = document.getElementById('ieMinimized'); if (mn) mn.style.display = 'none';
+}
+function ieMinimize() {
+  document.getElementById('ieOverlay').classList.remove('open');
+  var mn = document.getElementById('ieMinimized'); if (mn) mn.style.display = 'flex';
+}
+function ieRestore() {
+  var mn = document.getElementById('ieMinimized'); if (mn) mn.style.display = 'none';
+  document.getElementById('ieOverlay').classList.add('open');
+}
+
+function ieDeptDegis() {
+  var dept = document.getElementById('ie_dept').value; if (!dept) return;
+  var s = document.getElementById('ie_sorumlu');
+  s.innerHTML = '<option value="">— Seçiniz —</option>' + (SORUMLULAR[dept]||[]).map(function(k){return '<option value="'+k+'">'+k+'</option>';}).join('');
+  s.disabled = false;
+  var o = document.getElementById('ie_onaylayan');
+  o.innerHTML = '<option value="">— Seçiniz —</option>' + (ONAYLAYANLAR[dept]||[]).map(function(k){return '<option value="'+k+'">'+k+'</option>';}).join('');
+  o.disabled = false;
+  var ta = document.getElementById('ie_tanim');
+  ta.innerHTML = '<option value="">— Seçiniz —</option>' + (IS_TANIMLARI[dept]||[]).map(function(t){return '<option value="'+t+'">'+t+'</option>';}).join('') + '<option value="__yeni__">➕ Yeni İş Tanımı Ekle...</option>';
+  ta.disabled = false;
+}
+
+function ieProjeAC() {
+  var input = document.getElementById('ie_proje');
+  var list = document.getElementById('ie_projeList');
+  if (!input || !list) return;
+  var q = input.value.toLowerCase().trim();
+  var filtered = (window._projeler||[]).filter(function(p){return !q||p.ad.toLowerCase().indexOf(q)!==-1;});
+  if (!filtered.length) { list.classList.remove('open'); return; }
+  list.innerHTML = filtered.map(function(p){return '<div class="autocomplete-item" data-ad="'+esc(p.ad)+'"><span>'+esc(p.ad)+'</span></div>';}).join('');
+  list.classList.add('open');
+  list.onclick = function(e) {
+    var item = e.target.closest('.autocomplete-item'); if (!item) return;
+    input.value = item.getAttribute('data-ad');
+    list.classList.remove('open');
+    ieKontrol();
+  };
+}
+
+function ieKontrol() {
+  var ok = document.getElementById('ie_talep').value &&
+    (document.getElementById('ie_proje').value||'').trim() &&
+    document.getElementById('ie_dept').value &&
+    document.getElementById('ie_sorumlu').value &&
+    document.getElementById('ie_onaylayan').value &&
+    document.getElementById('ie_tanim').value &&
+    (document.getElementById('ie_detay').value||'').trim();
+  var btn = document.getElementById('ieSendBtn');
+  if (btn) { btn.disabled = !ok; btn.style.opacity = ok ? '1' : '.4'; btn.style.cursor = ok ? 'pointer' : 'not-allowed'; }
+}
+
+function ieGonder() {
+  if (!currentUser) { showToast('Giriş yapmanız gerekiyor'); return; }
+  var tanim = document.getElementById('ie_tanim').value;
+  if (tanim === '__yeni__') { showToast('Önce yeni iş tanımını girin'); return; }
+  var sorumluAd = document.getElementById('ie_sorumlu').value;
+  var sorumluUser = KULLANICILAR.find(function(u){return u.ad === sorumluAd;});
+  var obj = {
+    id: genId(),
+    projeTalebi: document.getElementById('ie_talep').value,
+    projeAdi: document.getElementById('ie_proje').value.trim(),
+    departman: document.getElementById('ie_dept').value,
+    oncelik: document.getElementById('ie_oncelik').value,
+    sorumlu: sorumluAd,
+    sorumluId: sorumluUser ? sorumluUser.id : '',
+    onaylayan: document.getElementById('ie_onaylayan').value,
+    isTanimi: tanim,
+    talepSebebi: document.getElementById('ie_detay').value.trim(),
+    dosyaLink: document.getElementById('ie_dosya').value.trim(),
+    gelisTarihi: document.getElementById('ie_verisTarihi').value,
+    bitisTarihi: document.getElementById('ie_bitisTarihi').value,
+    notlar: document.getElementById('ie_notlar').value.trim(),
+    isEmriDurum: 'Beklemede',
+    isEmriVeren: currentUser.ad,
+    isEmriVerenId: currentUser.id,
+    zaman: Date.now()
+  };
+  if (!window._fbSaveIsEmri) { showToast('Firebase bağlı değil'); return; }
+  window._fbSaveIsEmri(obj).then(function() {
+    if (sorumluUser && sorumluUser.id !== currentUser.id && window._fbSaveNotif) {
+      window._fbSaveNotif({id:genId(), gonderen:currentUser.id, hedef:sorumluUser.id,
+        tip:'isemri', projeAdi:obj.projeAdi, kayitId:obj.id,
+        mesaj:currentUser.ad+' size "'+obj.isTanimi+'" için bir iş emri oluşturdu.',
+        zaman:Date.now(), okundu:false});
+    }
+    ieKapat();
+    showToast('İş emri gönderildi! ' + sorumluAd + ' bildirim aldı.');
+  }).catch(function(e){showToast('Hata: '+e.message);});
+}
+
+function ieKart(lbl, val) {
+  return '<div style="background:var(--surface2);border-radius:8px;padding:10px">' +
+    '<div style="font-size:9px;color:var(--text3);font-weight:600;text-transform:uppercase;margin-bottom:3px">'+lbl+'</div>' +
+    '<div style="font-size:12.5px;font-weight:600;color:var(--text)">'+esc(val||'—')+'</div></div>';
+}
+
+function iePanelAc(id) {
+  var r = isEmirleri.find(function(x){return x.id===id;}); if (!r) return;
+  document.getElementById('iePanelAlt').textContent = r.projeAdi || '—';
+  var dc = {'Beklemede':['#FEF3C7','#D97706'],'Kabul Edildi':['#D1FAE5','#059669'],'Reddedildi':['#FEE2E2','#DC2626']};
+  var col = dc[r.isEmriDurum] || ['#F3F4F6','#6B7280'];
+  document.getElementById('iePanelBody').innerHTML =
+    '<div style="background:'+col[0]+';border-radius:8px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
+      '<span style="font-size:11px;font-weight:700;color:'+col[1]+';text-transform:uppercase">'+esc(r.isEmriDurum||'Beklemede')+'</span>' +
+      '<span style="font-size:10px;color:'+col[1]+'">'+esc(r.isEmriVeren||'—')+'</span>' +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">' +
+      ieKart('Proje',r.projeAdi)+ieKart('İş Tanımı',r.isTanimi)+
+      ieKart('Sorumlu',r.sorumlu)+ieKart('Onaylayan',r.onaylayan)+
+      ieKart('Departman',r.departman)+ieKart('Öncelik',r.oncelik)+
+      ieKart('Veriliş',r.gelisTarihi?fmtDate(r.gelisTarihi):'—')+
+      ieKart('İst. Bitiş',r.bitisTarihi?fmtDate(r.bitisTarihi):'—')+
+    '</div>' +
+    '<div style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:8px">' +
+      '<div style="font-size:9px;color:var(--text3);font-weight:600;text-transform:uppercase;margin-bottom:6px">İş Detayı</div>' +
+      '<div style="font-size:12.5px;color:var(--text2);line-height:1.7;white-space:pre-wrap">'+esc(r.talepSebebi||'—')+'</div></div>' +
+    (r.redSebebi ? '<div style="background:#FEE2E2;border-radius:8px;padding:12px;margin-bottom:8px"><div style="font-size:9px;color:#DC2626;font-weight:600;text-transform:uppercase;margin-bottom:6px">Red Sebebi</div><div style="font-size:12.5px;color:#991B1B">'+esc(r.redSebebi)+'</div></div>' : '') +
+    (r.notlar ? '<div style="background:var(--surface2);border-radius:8px;padding:12px"><div style="font-size:9px;color:var(--text3);font-weight:600;text-transform:uppercase;margin-bottom:6px">Notlar</div><div style="font-size:12.5px;color:var(--text2)">'+esc(r.notlar)+'</div></div>' : '');
+
+  var benSorumlu = currentUser && r.sorumluId && r.sorumluId === currentUser.id;
+  var benVeren = currentUser && r.isEmriVerenId === currentUser.id;
+  var foot = document.getElementById('iePanelFoot');
+  foot.innerHTML = '';
+  if (benSorumlu && r.isEmriDurum === 'Beklemede') {
+    foot.innerHTML =
+      '<button class="ie-act-btn" style="background:#059669;color:#fff" data-ieid="'+r.id+'" onclick="ieKabul(this.dataset.ieid)">Kabul Et</button>' +
+      '<button class="ie-act-btn" style="background:#DC2626;color:#fff" data-ieid="'+r.id+'" onclick="ieRedFormAc(this.dataset.ieid)">Reddet</button>';
+  } else if (benVeren && r.isEmriDurum === 'Beklemede') {
+    foot.innerHTML = '<div style="font-size:12px;color:var(--text3);text-align:center;width:100%">Kabul/red bekleniyor...</div>';
+  } else if (r.isEmriDurum === 'Kabul Edildi') {
+    foot.innerHTML = '<div style="font-size:12px;color:#059669;text-align:center;width:100%">Kabul edildi — iş listesine eklendi</div>';
+  } else if (r.isEmriDurum === 'Reddedildi') {
+    foot.innerHTML = '<div style="font-size:12px;color:#DC2626;text-align:center;width:100%">Reddedildi</div>';
+  }
+  document.getElementById('iePanel').classList.add('open');
+  document.getElementById('iePanelBg').style.display = 'block';
+}
+
+function iePanelKapat() {
+  document.getElementById('iePanel').classList.remove('open');
+  document.getElementById('iePanelBg').style.display = 'none';
+}
+
+function ieKabul(id) {
+  var r = isEmirleri.find(function(x){return x.id===id;}); if (!r) return;
+  r.isEmriDurum = 'Kabul Edildi';
+  var isObj = JSON.parse(JSON.stringify(r));
+  isObj.durum = 'Bekliyor';
+  isObj.ekleyen = currentUser.id;
+  // bitisTarihi iş emrinde "istenen bitiş" — iş kaydında hedef bitiş olarak sakla
+  // başlangıç ve gerçek bitiş henüz yok
+  isObj.baslangicTarihi = '';
+  isObj.hedefBitisTarihi = r.bitisTarihi || ''; // İstenen bitiş → hedef
+  isObj.bitisTarihi = ''; // Gerçek bitiş kullanıcı girecek
+  // isEmriVerenId'yi iş kaydında sakla — silince bildirim için
+  isObj._isEmriVerenId = r.isEmriVerenId;
+  isObj._isEmriId = r.id;
+  delete isObj.isEmriDurum; delete isObj.sorumluId;
+  window._fbSave(isObj);
+  window._fbSaveIsEmri(r).then(function() {
+    if (window._fbSaveNotif) {
+      window._fbSaveNotif({id:genId(), gonderen:currentUser.id, hedef:r.isEmriVerenId,
+        tip:'isemri_kabul', projeAdi:r.projeAdi, kayitId:r.id,
+        mesaj:currentUser.ad+' iş emrini kabul etti.', zaman:Date.now(), okundu:false});
+    }
+    iePanelKapat();
+    showToast('Kabul edildi ve iş listesine eklendi!');
+  });
+}
+
+function ieRedFormAc(id) {
+  document.getElementById('iePanelFoot').innerHTML =
+    '<div style="width:100%;display:flex;flex-direction:column;gap:8px">' +
+      '<textarea id="ie_redSebep" placeholder="Red sebebini yazın (zorunlu)..." style="width:100%;padding:8px;border:1px solid #FECACA;border-radius:8px;font-size:12px;font-family:inherit;outline:none;min-height:70px;resize:vertical"></textarea>' +
+      '<div style="display:flex;gap:8px">' +
+        '<button class="ie-act-btn" style="background:#DC2626;color:#fff" data-ieid="'+id+'" onclick="ieRedGonder(this.dataset.ieid)">Reddet</button>' +
+        '<button class="ie-act-btn" style="background:var(--surface3);color:var(--text);border:1px solid var(--border)" data-ieid="'+id+'" onclick="iePanelAc(this.dataset.ieid)">İptal</button>' +
+      '</div></div>';
+}
+
+function ieRedGonder(id) {
+  var sebep = (document.getElementById('ie_redSebep').value||'').trim();
+  if (!sebep) { showToast('Red sebebi zorunlu'); return; }
+  var r = isEmirleri.find(function(x){return x.id===id;}); if (!r) return;
+  r.isEmriDurum = 'Reddedildi';
+  r.redSebebi = sebep;
+  window._fbSaveIsEmri(r).then(function() {
+    if (window._fbSaveNotif) {
+      window._fbSaveNotif({id:genId(), gonderen:currentUser.id, hedef:r.isEmriVerenId,
+        tip:'isemri_red', projeAdi:r.projeAdi, kayitId:r.id,
+        mesaj:currentUser.ad+' iş emrini reddetti: '+sebep.slice(0,60), zaman:Date.now(), okundu:false});
+    }
+    iePanelKapat();
+    showToast('İş emri reddedildi.');
+  });
+}
+
+function ieListeGuncelle() {
+  var nb = document.getElementById('nb_isemirleri');
+  if (!nb || !currentUser) return;
+  nb.textContent = isEmirleri.filter(function(x){return x.isEmriVerenId===currentUser.id;}).length;
+}
+
+function renderIsEmirleri() {
+  if (!currentUser) return;
+  var benim = isEmirleri.filter(function(x){return x.isEmriVerenId===currentUser.id;});
+  var sub = document.getElementById('isemirleriSub');
+  if (sub) sub.textContent = benim.length + ' iş emri';
+  var colors = {Tümü:['#DBEAFE','#1D4ED8'],Beklemede:['#FEF3C7','#D97706'],'Kabul Edildi':['#D1FAE5','#059669'],Reddedildi:['#FEE2E2','#DC2626']};
+  var stats = {Tümü:benim.length, Beklemede:0,'Kabul Edildi':0, Reddedildi:0};
+  benim.forEach(function(x){if (stats[x.isEmriDurum]!==undefined) stats[x.isEmriDurum]++;});
+  var sd = document.getElementById('isemirleriStats');
+  if (sd) sd.innerHTML = Object.keys(stats).map(function(k){
+    var c = colors[k];
+    return '<div class="mp-stat" style="background:'+c[0]+';flex:1"><div class="mp-stat-num" style="color:'+c[1]+'">'+stats[k]+'</div><div class="mp-stat-lbl" style="color:'+c[1]+'">'+k+'</div></div>';
+  }).join('');
+  var list = document.getElementById('isemirleriList');
+  if (!list) return;
+  if (!benim.length) {list.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3)">Henüz iş emri vermediniz</div>';return;}
+  var dc = {'Beklemede':['#FEF3C7','#D97706'],'Kabul Edildi':['#D1FAE5','#059669'],Reddedildi:['#FEE2E2','#DC2626']};
+  list.innerHTML = '<table style="width:100%;border-collapse:collapse"><thead><tr style="background:var(--surface3)">' +
+    '<th style="padding:10px 14px;font-size:11px;font-weight:600;color:var(--text2);text-align:left">#</th>' +
+    '<th style="padding:10px 14px;font-size:11px;font-weight:600;color:var(--text2);text-align:left">Proje</th>' +
+    '<th style="padding:10px 14px;font-size:11px;font-weight:600;color:var(--text2);text-align:left">İş Tanımı</th>' +
+    '<th style="padding:10px 14px;font-size:11px;font-weight:600;color:var(--text2);text-align:left">Sorumlu</th>' +
+    '<th style="padding:10px 14px;font-size:11px;font-weight:600;color:var(--text2);text-align:left">Tarih</th>' +
+    '<th style="padding:10px 14px;font-size:11px;font-weight:600;color:var(--text2);text-align:left">Durum</th>' +
+    '<th style="padding:10px 14px;font-size:11px;font-weight:600;color:var(--text2)"></th>' +
+    '</tr></thead><tbody>' +
+    benim.map(function(r, i) {
+      var c = dc[r.isEmriDurum] || ['#F3F4F6','#6B7280'];
+      return '<tr style="border-bottom:1px solid var(--border);cursor:pointer" data-ieid="'+r.id+'" onclick="iePanelAc(this.dataset.ieid)">' +
+        '<td style="padding:10px 14px;font-size:12px;color:var(--text3)">'+(i+1)+'</td>' +
+        '<td style="padding:10px 14px;font-size:12.5px;font-weight:600">'+esc(r.projeAdi||'—')+'</td>' +
+        '<td style="padding:10px 14px;font-size:12px;color:var(--text2)">'+esc(r.isTanimi||'—')+'</td>' +
+        '<td style="padding:10px 14px;font-size:12px;color:var(--text2)">'+esc(r.sorumlu||'—')+'</td>' +
+        '<td style="padding:10px 14px;font-size:12px;color:var(--text2)">'+(r.gelisTarihi?fmtDate(r.gelisTarihi):'—')+'</td>' +
+        '<td style="padding:10px 14px">'+
+        (function(){
+          // Kabul edilen emrin iş kaydındaki durumunu bul
+          var gercekDurum = r.isEmriDurum;
+          if(r.isEmriDurum==="Kabul Edildi"){
+            var isKaydi = records.find(function(x){return x._isEmriId===r.id;});
+            if(isKaydi) gercekDurum = isKaydi.durum==="Tamamlandı" ? "Tamamlandı" : "Kabul Edildi";
+          }
+          var renkMap={"Beklemede":["#FEF3C7","#D97706"],"Kabul Edildi":["#D1FAE5","#059669"],"Reddedildi":["#FEE2E2","#DC2626"],"Tamamlandı":["#DBEAFE","#1D4ED8"],"Silindi":["#F3F4F6","#6B7280"]};
+          var rc=renkMap[gercekDurum]||renkMap[r.isEmriDurum]||["#F3F4F6","#6B7280"];
+          return "<span style=\"background:"+rc[0]+";color:"+rc[1]+";font-size:10px;font-weight:700;padding:3px 10px;border-radius:10px\">"+esc(gercekDurum)+"</span>";
+        })()+
+      "</td>"+
+      '<td style="padding:10px 14px;text-align:right;white-space:nowrap">'+
+        (r.isEmriDurum==='Beklemede'?
+          '<button class="btn" style="font-size:11px;padding:3px 8px;margin-right:4px" data-ieid="'+r.id+'" onclick="event.stopPropagation();ieDuzenleAc(this.dataset.ieid)">✏</button>'+
+          '<button class="btn" style="font-size:11px;padding:3px 8px;color:#DC2626;border-color:#FECACA" data-ieid="'+r.id+'" onclick="event.stopPropagation();ieGeriAl(this.dataset.ieid)">🗑</button>'
+          :r.isEmriDurum==='Kabul Edildi'||r.isEmriDurum==='Tamamlandı'?
+          '<button class="btn" style="font-size:11px;padding:3px 8px;color:#DC2626;border-color:#FECACA" data-ieid="'+r.id+'" onclick="event.stopPropagation();ieGeriAl(this.dataset.ieid)">🗑</button>'
+          :
+          '<button class="btn" style="font-size:11px;padding:3px 8px" data-ieid="'+r.id+'" onclick="event.stopPropagation();ieDuzenleAc(this.dataset.ieid)">✏</button>'
+        )+
+      '</td>'+
+      '</tr>';
+    }).join('') + '</tbody></table>';
+}
+
+
+var _itDept='İnşaat';
+function itSetDept(dept){
+  _itDept=dept;
+  var map={'İnşaat':'insaat','Mekanik':'mekanik','Harita':'harita'};
+  ['İnşaat','Mekanik','Harita'].forEach(function(d){
+    var btn=document.getElementById('itBtn_'+map[d]);
+    if(!btn)return;
+    if(d===dept){btn.style.background='#DBEAFE';btn.style.color='#1D4ED8';btn.style.borderColor='#BFDBFE';btn.style.fontWeight='600';}
+    else{btn.style.background='';btn.style.color='var(--text2)';btn.style.borderColor='';btn.style.fontWeight='';}
+  });
+  renderIsTanim();
+}
+function renderIsTanim(){
+  var list=document.getElementById('itList');if(!list)return;
+  var items=IS_TANIMLARI[_itDept]||[];
+  if(!items.length){list.innerHTML='<div style="text-align:center;padding:30px;color:var(--text3)">Bu departmanda iş tanımı yok</div>';return;}
+  list.innerHTML=items.map(function(t,i){
+    return '<div id="it_row_'+i+'" style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border)">'+
+      '<span style="font-size:13px;color:var(--text)">'+esc(t)+'</span>'+
+      '<div style="display:flex;gap:6px">'+
+        '<button class="btn" style="font-size:11px;padding:4px 10px" data-idx="'+i+'" onclick="itDuzenle(+this.dataset.idx)">✏ Düzenle</button>'+
+        '<button class="btn" style="font-size:11px;padding:4px 10px;color:#DC2626;border-color:#FECACA" data-idx="'+i+'" onclick="itSil(+this.dataset.idx)">🗑 Sil</button>'+
+      '</div></div>';
+  }).join('');
+}
+function itDuzenle(idx){
+  var el=document.getElementById('it_row_'+idx);if(!el)return;
+  var eskiAd=IS_TANIMLARI[_itDept][idx];
+  el.innerHTML='<input type="text" id="it_edit_'+idx+'" value="'+esc(eskiAd)+'" style="flex:1;padding:6px 10px;border:1px solid var(--accent);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;margin-right:8px">'+
+    '<div style="display:flex;gap:6px">'+
+      '<button class="btn btn-primary" style="font-size:11px;padding:4px 10px" data-idx="'+idx+'" onclick="itKaydet(+this.dataset.idx)">✓ Kaydet</button>'+
+      '<button class="btn" style="font-size:11px;padding:4px 10px" onclick="renderIsTanim()">İptal</button>'+
+    '</div>';
+  setTimeout(function(){var e=document.getElementById('it_edit_'+idx);if(e){e.focus();e.select();}},50);
+}
+function itKaydet(idx){
+  var input=document.getElementById('it_edit_'+idx);if(!input)return;
+  var yeniAd=input.value.trim();if(!yeniAd){showToast('İş tanımı boş olamaz');return;}
+  var eskiAd=IS_TANIMLARI[_itDept][idx];
+  IS_TANIMLARI[_itDept][idx]=yeniAd;
+  if(eskiAd!==yeniAd){
+    var etkilenen=records.filter(function(r){return r.departman===_itDept&&r.isTanimi===eskiAd;});
+    etkilenen.forEach(function(r){r.isTanimi=yeniAd;if(window._fbSave)window._fbSave(r);});
+    showToast(etkilenen.length?'Güncellendi — '+etkilenen.length+' kayıt da güncellendi':'İş tanımı güncellendi ✓');
+  } else showToast('İş tanımı güncellendi ✓');
+  renderIsTanim();
+}
+function itSil(idx){
+  if(!confirm('"'+IS_TANIMLARI[_itDept][idx]+'" silinsin mi?'))return;
+  IS_TANIMLARI[_itDept].splice(idx,1);
+  showToast('İş tanımı silindi ✓');
+  renderIsTanim();
+}
+function itEkle(){
+  var input=document.getElementById('itYeniInput');
+  var ad=(input.value||'').trim();
+  if(!ad){showToast('İş tanımı girin');return;}
+  if(IS_TANIMLARI[_itDept]&&IS_TANIMLARI[_itDept].indexOf(ad)!==-1){showToast('Bu iş tanımı zaten mevcut');return;}
+  if(!IS_TANIMLARI[_itDept])IS_TANIMLARI[_itDept]=[];
+  IS_TANIMLARI[_itDept].push(ad);
+  input.value='';
+  showToast('✓ İş tanımı eklendi');
+  renderIsTanim();
+}
+function onIsTanimiChange(){
+  var sel=document.getElementById('f_isTanimi');
+  var wrap=document.getElementById('isTanimiManuelWrap');
+  if(!wrap)return;
+  if(sel.value==='__yeni__'){wrap.style.display='block';document.getElementById('f_isTanimiManuel').focus();}
+  else{wrap.style.display='none';if(document.getElementById('f_isTanimiManuel'))document.getElementById('f_isTanimiManuel').value='';}
+}
+
+
+var silinenler = [];
+
+function renderCopKutusu(){
+  var sub = document.getElementById('copSub');
+  if(sub) sub.textContent = silinenler.length + ' silinen kayıt';
+  var list = document.getElementById('copList');
+  if(!list) return;
+  if(!silinenler.length){
+    list.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3)">Çöp kutusu boş</div>';
+    return;
+  }
+  list.innerHTML='<table style="width:100%;border-collapse:collapse">'+
+    '<thead><tr style="background:var(--surface3)">'+
+      '<th style="padding:10px 14px;font-size:11px;font-weight:600;color:var(--text2);text-align:left">#</th>'+
+      '<th style="padding:10px 14px;font-size:11px;font-weight:600;color:var(--text2);text-align:left">Proje</th>'+
+      '<th style="padding:10px 14px;font-size:11px;font-weight:600;color:var(--text2);text-align:left">İş Tanımı</th>'+
+      '<th style="padding:10px 14px;font-size:11px;font-weight:600;color:var(--text2);text-align:left">Departman</th>'+
+      '<th style="padding:10px 14px;font-size:11px;font-weight:600;color:var(--text2);text-align:left">Sorumlu</th>'+
+      '<th style="padding:10px 14px;font-size:11px;font-weight:600;color:var(--text2);text-align:left">Silinme</th>'+
+      '<th style="padding:10px 14px;font-size:11px;font-weight:600;color:var(--text2)"></th>'+
+    '</tr></thead><tbody>'+
+    silinenler.map(function(r,i){
+      var del_date = r._deletedAt ? new Date(r._deletedAt).toLocaleDateString('tr-TR') : '—';
+      return '<tr style="border-bottom:1px solid var(--border)">'+
+        '<td style="padding:10px 14px;font-size:12px;color:var(--text3)">'+(i+1)+'</td>'+
+        '<td style="padding:10px 14px;font-size:12.5px;font-weight:600;color:var(--text)">'+esc(r.projeAdi||'—')+'</td>'+
+        '<td style="padding:10px 14px;font-size:12px;color:var(--text2)">'+esc(r.isTanimi||'—')+'</td>'+
+        '<td style="padding:10px 14px;font-size:12px;color:var(--text2)">'+esc(r.departman||'—')+'</td>'+
+        '<td style="padding:10px 14px;font-size:12px;color:var(--text2)">'+esc(r.sorumlu||'—')+'</td>'+
+        '<td style="padding:10px 14px;font-size:12px;color:var(--text3)">'+del_date+'</td>'+
+        '<td style="padding:10px 14px;text-align:right;white-space:nowrap">'+
+          '<button class="btn" style="font-size:11px;padding:3px 10px;margin-right:4px;color:#059669;border-color:#A7F3D0" data-cid="'+r.id+'" onclick="copGeriAl(this.dataset.cid)">↩ Geri Al</button>'+
+          '<button class="btn" style="font-size:11px;padding:3px 10px;color:#DC2626;border-color:#FECACA" data-cid="'+r.id+'" onclick="copKaliciSil(this.dataset.cid)">✕ Kalıcı Sil</button>'+
+        '</td>'+
+      '</tr>';
+    }).join('')+'</tbody></table>';
+}
+
+function copGeriAl(id){
+  if(!confirm('Bu kayıt iş listesine geri alınacak. Devam?')) return;
+  window._fbSilinenRestore(id).then(function(){
+    showToast('✓ Kayıt geri alındı!');
+  }).catch(function(e){showToast('Hata: '+e.message);});
+}
+
+function copKaliciSil(id){
+  if(!confirm('Bu kayıt kalıcı olarak silinecek, geri alınamaz! Emin misiniz?')) return;
+  window._fbSilinenKaliciSil(id).then(function(){
+    showToast('Kayıt kalıcı olarak silindi.');
+  }).catch(function(e){showToast('Hata: '+e.message);});
+}
+
+function copKutusuBosalt(){
+  if(!silinenler.length){showToast('Çöp kutusu zaten boş');return;}
+  if(!confirm(silinenler.length+' kayıt kalıcı olarak silinecek! Emin misiniz?')) return;
+  var promises = silinenler.map(function(r){ return window._fbSilinenKaliciSil(r.id); });
+  Promise.all(promises).then(function(){
+    showToast('✓ Çöp kutusu boşaltıldı.');
+  });
+}
+
+</script>
 </body>
 </html>
